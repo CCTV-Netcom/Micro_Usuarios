@@ -131,6 +131,6 @@ Documentación interactiva:
 ---
 
 ## 📸 Imagen/diagramas
-Puedes añadir diagramas propios en esta sección (por ejemplo, un diagrama de arquitectura o flujo de autenticación).
+#Poner diagrama de Arquitectura si me lo piden 
 
 ![architecture-placeholder](https://dummyimage.com/900x400/1b263b/ffffff&text=Diagrama+de+Arquitectura)

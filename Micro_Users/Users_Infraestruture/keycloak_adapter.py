@@ -23,15 +23,11 @@ class KeycloakAdapter(IKeycloakService):
         realm: str,
         client_id: str = "",
         client_secret: Optional[str] = None,
-        admin_user: Optional[str] = None,
-        admin_password: Optional[str] = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.realm = realm
         self.client_id = client_id
         self.client_secret = client_secret
-        self.admin_user = admin_user
-        self.admin_password = admin_password
         # Do not persist TOTP secrets on server by default. The generated secret
         # will be returned to the client and verification must include it.
         self._totp_secrets: Dict[str, str] = {}
@@ -51,33 +47,22 @@ class KeycloakAdapter(IKeycloakService):
         return f"{self.base_url}/admin/realms/{self.realm}"
 
     def _get_admin_token(self) -> str:
-        if self.client_id and self.client_secret:
-            data = {
-                "grant_type": "client_credentials",
-                "client_id": self.client_id,
-                "client_secret": self.client_secret,
-            }
-            r = requests.post(self._token_url(), data=data, timeout=10)
-            if r.ok:
-                token = r.json().get("access_token")
-                if token:
-                    return token
-                raise InvalidCredentialsException("Failed to obtain access token with client credentials")
+        if not (self.client_id and self.client_secret):
+            raise InvalidCredentialsException("Client credentials required for admin operations")
 
-        if self.admin_user and self.admin_password:
-            data = {
-                "grant_type": "password",
-                "client_id": self.client_id or "admin-cli",
-                "username": self.admin_user,
-                "password": self.admin_password,
-            }
-            r = requests.post(self._token_url(), data=data, timeout=10)
-            r.raise_for_status()
+        data = {
+            "grant_type": "client_credentials",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+        }
+        r = requests.post(self._token_url(), data=data, timeout=10)
+        if r.ok:
             token = r.json().get("access_token")
             if token:
                 return token
-            raise InvalidCredentialsException("Failed to obtain admin access token with provided credentials")
-        raise InvalidCredentialsException("No admin credentials available")
+            raise InvalidCredentialsException("Failed to obtain access token with client credentials")
+        r.raise_for_status()
+        raise InvalidCredentialsException("Failed to obtain access token with client credentials")
     #Metodo de crear usuario
     def create_user(
         self,
@@ -95,7 +80,12 @@ class KeycloakAdapter(IKeycloakService):
             raise InvalidEmailFormatException("email is required and will be used as username")
         # force username to be the email for consistency
         username = str(email)
-        payload = {"username": username, "email": email, "enabled": True}
+        payload = {
+            "username": username,
+            "email": email,
+            "enabled": False,
+            "requiredActions": ["CONFIGURE_TOTP"],
+        }
         if firstName:
             payload["firstName"] = firstName
         if lastName:
@@ -235,16 +225,19 @@ class KeycloakAdapter(IKeycloakService):
             if r.status_code in (200, 201, 204):
                 configured = True
             else:
-                # attach response for debugging
                 configured = False
-                # try to include response text in attributes for debugging
-                attributes["_last_credential_error"] = [r.text]
+                raise RuntimeError(f"Failed to register OTP credential: {r.status_code} {r.text}")
         except Exception as e:
             configured = False
             attributes["_last_credential_error"] = [str(e)]
+            raise
 
         # Do NOT persist the secret in user attributes or on disk.
-        payload: Dict[str, Any] = {"requiredActions": required_actions, "attributes": attributes}
+        payload: Dict[str, Any] = {
+            "requiredActions": required_actions,
+            "attributes": attributes,
+            "enabled": False,
+        }
         # Include required fields to satisfy realm validation rules (e.g., email required)
         if existing.get("email"):
             payload["email"] = existing.get("email")
@@ -311,12 +304,16 @@ class KeycloakAdapter(IKeycloakService):
         # mark configured attribute
         attrs["otpConfigured"] = ["true"]
 
-        payload = {"requiredActions": required_actions, "attributes": attrs}
+        payload = {"requiredActions": required_actions, "attributes": attrs, "enabled": True}
         # include mandatory fields to satisfy validation
         if existing.get("email"):
             payload["email"] = existing.get("email")
         if existing.get("username"):
             payload["username"] = existing.get("username")
+        if existing.get("firstName"):
+            payload["firstName"] = existing.get("firstName")
+        if existing.get("lastName"):
+            payload["lastName"] = existing.get("lastName")
 
         self.update_user(user_id, payload)
 

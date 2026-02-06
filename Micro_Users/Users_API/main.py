@@ -61,18 +61,16 @@ def build_adapter_from_env() -> KeycloakAdapter:
     client_id = os.environ.get("KEYCLOAK_CLIENT_ID")
     # Prefer client credentials (client secret). Admin username/password are optional.
     client_secret = os.environ.get("KEYCLOAK_CLIENT_SECRET")
-    admin_user = os.environ.get("KEYCLOAK_ADMIN_USER")
-    admin_pass = os.environ.get("KEYCLOAK_ADMIN_PASS")
 
     if not all([url, realm, client_id]):
         raise RuntimeError(
             "Missing Keycloak configuration in environment. Set KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID"
         )
 
-    # Require either a client secret (preferred) or admin credentials
-    if not (client_secret or (admin_user and admin_pass)):
+    # Require client credentials for admin operations
+    if not client_secret:
         raise RuntimeError(
-            "Missing Keycloak admin credentials. Set either KEYCLOAK_CLIENT_SECRET or both KEYCLOAK_ADMIN_USER and KEYCLOAK_ADMIN_PASS"
+            "Missing Keycloak client credentials. Set KEYCLOAK_CLIENT_SECRET"
         )
 
     return KeycloakAdapter(
@@ -80,8 +78,6 @@ def build_adapter_from_env() -> KeycloakAdapter:
         realm=realm,
         client_id=client_id,
         client_secret=client_secret,
-        admin_user=admin_user,
-        admin_password=admin_pass,
     )
 
 
@@ -128,7 +124,7 @@ def create_user(
     user_dto = Mediator.send(cmd)
     if not user_dto:
         raise HTTPException(status_code=500, detail="Failed to create user")
-    return UserResponse(**user_dto.dict())
+    return UserResponse(**user_dto.model_dump())
 
 
 @Mediator.handler
@@ -138,11 +134,11 @@ def _update_handler_fn(request: UpdateUserCommand):
 
 @app.put("/users/{user_id}", response_model=UserResponse)
 def update_user(user_id: str, payload: UpdateUserDTO):
-    cmd = UpdateUserCommand(user_id=user_id, **payload.dict())
+    cmd = UpdateUserCommand(user_id=user_id, **payload.model_dump())
     user_dto = Mediator.send(cmd)
     if user_dto is None:
         raise HTTPException(status_code=404, detail="User not found or update failed")
-    return UserResponse(**user_dto.dict())
+    return UserResponse(**user_dto.model_dump())
 
 
 @Mediator.handler
@@ -156,7 +152,7 @@ def find_user_by_id(user_id: str):
     user_dto = Mediator.send(query)
     if not user_dto:
         raise HTTPException(status_code=404, detail="User not found")
-    return UserResponse(**user_dto.dict())
+    return UserResponse(**user_dto.model_dump())
 
 
 @Mediator.handler
@@ -166,7 +162,7 @@ def _login_handler_fn(request: LoginCommand):
 
 @app.post("/auth/login", response_model=TokenDTO)
 def login(payload: LoginDTO):
-    cmd = LoginCommand(**payload.dict())
+    cmd = LoginCommand(**payload.model_dump())
     try:
         token = Mediator.send(cmd)
     except Exception:
@@ -181,7 +177,7 @@ def _refresh_handler_fn(request: RefreshTokenCommand):
 
 @app.post("/auth/refresh", response_model=TokenDTO)
 def refresh_token(payload: RefreshTokenDTO):
-    cmd = RefreshTokenCommand(**payload.dict())
+    cmd = RefreshTokenCommand(**payload.model_dump())
     try:
         token = Mediator.send(cmd)
     except Exception:
@@ -224,68 +220,6 @@ def verify_totp(user_id: str, payload: TotpVerifyDTO = Body(...)):
     return result
 
 
-@app.get("/users/{user_id}/totp/qr")
-def totp_qr(user_id: str):
-    try:
-        user_info = _adapter.find_user_by_id(user_id)
-    except UserNotFoundException:
-        raise HTTPException(status_code=404, detail="User not found")
-    # Robustly extract the secret from attributes (Keycloak may store as list or string)
-    attrs = user_info.get("attributes") or {}
-    secret = None
-    for key in ("otpSecret", "otpsecret", "otp_secret", "otp"):
-        if key in attrs:
-            val = attrs.get(key)
-            if isinstance(val, list) and len(val) > 0:
-                secret = val[0]
-            elif isinstance(val, str):
-                secret = val
-            break
-
-    if not secret:
-        secret = _adapter.get_cached_totp_secret(user_id)
-
-    # If still not found, try some common fallbacks (some setups store in 'otp' credentials)
-    if not secret:
-        # Return helpful debug output instead of opaque 404
-        return JSONResponse(
-            status_code=404,
-            content={
-                "detail": "TOTP secret not found",
-                "attributes": attrs,
-                "user_info_sample": {
-                    "id": user_info.get("id"),
-                    "username": user_info.get("username"),
-                    "email": user_info.get("email"),
-                },
-            },
-        )
-
-    issuer = _adapter.realm
-    account = user_info.get("email") or user_info.get("username") or user_id
-    otpauth_url = "otpauth://totp/{issuer}:{account}?secret={secret}&issuer={issuer}".format(
-        issuer=issuer, account=account, secret=secret
-    )
-
-    qr = qrcode.QRCode(box_size=6, border=2)
-    qr.add_data(otpauth_url)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
-    buffer.seek(0)
-    return StreamingResponse(buffer, media_type="image/png")
-
-
-@app.get("/users/{user_id}/totp/debug")
-def totp_debug(user_id: str):
-    """Return user attributes to help debug TOTP registration issues (dev endpoint)."""
-    try:
-        user_info = _adapter.find_user_by_id(user_id)
-    except UserNotFoundException:
-        raise HTTPException(status_code=404, detail="User not found")
-    attrs = user_info.get("attributes") or {}
-    return JSONResponse(status_code=200, content={"attributes": attrs, "user_info": {"id": user_info.get("id"), "username": user_info.get("username"), "email": user_info.get("email")}})
 
 
 

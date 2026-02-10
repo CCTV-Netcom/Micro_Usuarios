@@ -13,6 +13,7 @@ class IKeycloakService(ABC):
         firstName: Optional[str] = None,
         lastName: Optional[str] = None,
         password: Optional[str] = None,
+        attributes: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         raise NotImplementedError()
 
@@ -26,7 +27,7 @@ class IKeycloakService(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def login(self, username: str, password: str, totp: Optional[str] = None) -> Dict[str, Any]:
+    def login(self, username: str, password: str) -> Dict[str, Any]:
         raise NotImplementedError()
 
     @abstractmethod
@@ -37,10 +38,4 @@ class IKeycloakService(ABC):
     def change_password(self, user_id: str, new_password: str, temporary: bool = False) -> None:
         raise NotImplementedError()
 
-    @abstractmethod
-    def register_totp_device(self, user_id: str, device_name: Optional[str] = None) -> Dict[str, Any]:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def verify_totp(self, user_id: str, code: str, secret: Optional[str] = None) -> Dict[str, Any]:
-        raise NotImplementedError()
+    

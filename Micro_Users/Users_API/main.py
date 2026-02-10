@@ -1,8 +1,7 @@
 import os
 from dotenv import load_dotenv
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Form, Body
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Form
 from pydantic import BaseModel, EmailStr
 from typing import Optional, Dict, Any
 
@@ -16,27 +15,16 @@ from Users_Aplication.Handlers.Commands.CreateUserHandler import CreateUserHandl
 from Users_Aplication.Handlers.Commands.UpdateUserHandler import UpdateUserHandler
 from Users_Aplication.Handlers.Commands.LoginHandler import LoginHandler
 from Users_Aplication.Handlers.Commands.RefreshTokenHandler import RefreshTokenHandler
-from Users_Aplication.Handlers.Commands.RegisterTotpDeviceHandler import RegisterTotpDeviceHandler
-from Users_Aplication.Handlers.Commands.VerifyTotpHandler import VerifyTotpHandler
 from Users_Aplication.Handlers.Queries.FindUserByIDHandler import FindUserByIdHandler
-from Users_Aplication.DTOs.UserDTO import UserDTO
 from Users_Aplication.DTOs.UpdateUserDTO import UpdateUserDTO
-from Users_Aplication.DTOs.AuthDTO import LoginDTO, RefreshTokenDTO, TotpRegisterDTO, TotpRegisterResponseDTO
+from Users_Aplication.DTOs.LoginDTO import LoginDTO
+from Users_Aplication.DTOs.RefreshTokenDTO import RefreshTokenDTO
 from Users_Aplication.DTOs.TokenDTO import TokenDTO
 from Users_Aplication.Commands.CreateUserCommand import CreateUserCommand
 from Users_Aplication.Commands.UpdateUserCommand import UpdateUserCommand
 from Users_Aplication.Commands.LoginCommand import LoginCommand
-from Users_Aplication.Commands.VerifyTotpCommand import VerifyTotpCommand
 from Users_Aplication.Commands.RefreshTokenCommand import RefreshTokenCommand
-from Users_Aplication.Commands.RegisterTotpDeviceCommand import RegisterTotpDeviceCommand
-from Users_Aplication.Commands.VerifyTotpCommand import VerifyTotpCommand
-from Users_Aplication.DTOs.AuthDTO import TotpVerifyDTO, TotpVerifyResponseDTO
 from Users_Aplication.Queries.FindUserByIDQuerie import FindUserByIdQuery
-from Users_Domain.Exceptions.exceptions import (
-    UserNotFoundException
-)
-import io
-import qrcode
 from contextlib import asynccontextmanager
 
 # use mediatr library
@@ -83,15 +71,13 @@ def build_adapter_from_env() -> KeycloakAdapter:
 
 @asynccontextmanager
 async def lifespan(app):
-    global _adapter, create_handler, update_handler, find_handler, login_handler, refresh_handler, totp_handler, verify_handler
+    global _adapter, create_handler, update_handler, find_handler, login_handler, refresh_handler
     _adapter = build_adapter_from_env()
     create_handler = CreateUserHandler(_adapter)
     update_handler = UpdateUserHandler(_adapter)
     find_handler = FindUserByIdHandler(_adapter)
     login_handler = LoginHandler(_adapter)
     refresh_handler = RefreshTokenHandler(_adapter)
-    totp_handler = RegisterTotpDeviceHandler(_adapter)
-    verify_handler = VerifyTotpHandler(_adapter)
     # no manual registration needed when using Mediator.handler decorators
     yield
 
@@ -115,7 +101,7 @@ def create_user(
     email: EmailStr = Form(...),
     first_name: str = Form(...),
     last_name: str = Form(...),
-    cedula: float = Form(...),
+    cedula: int = Form(...),
 ):
     # Build command from multipart/form-data fields
     cmd = CreateUserCommand(
@@ -185,45 +171,10 @@ def refresh_token(payload: RefreshTokenDTO):
     return token
 
 
-@Mediator.handler
-def _register_totp_handler_fn(request: RegisterTotpDeviceCommand):
-    return totp_handler.handle(request)
-
-
-@Mediator.handler
-def _verify_totp_handler_fn(request: VerifyTotpCommand):
-    return verify_handler.handle(request)
-
-
-@app.post("/users/{user_id}/totp/register", response_model=TotpRegisterResponseDTO)
-def register_totp_device(user_id: str, payload: TotpRegisterDTO = Body(default=TotpRegisterDTO())):
-    cmd = RegisterTotpDeviceCommand(user_id=user_id, device_name=payload.device_name)
-    try:
-        result = Mediator.send(cmd)
-    except UserNotFoundException:
-        raise HTTPException(status_code=404, detail="User not found")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to register TOTP device: {e}")
-    result.qr_code_url = f"/users/{user_id}/totp/qr"
-    return result
-
-
-@app.post("/users/{user_id}/totp/verify", response_model=TotpVerifyResponseDTO)
-def verify_totp(user_id: str, payload: TotpVerifyDTO = Body(...)):
-    cmd = VerifyTotpCommand(user_id=user_id, code=payload.code, secret=payload.secret)
-    try:
-        result = Mediator.send(cmd)
-    except UserNotFoundException:
-        raise HTTPException(status_code=404, detail="User not found")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"TOTP verification failed: {e}")
-    return result
-
-
 
 
 
 if __name__ == "__main__":
     import uvicorn
         #el reload colocalo en true cuando estes en desarrollo
-    uvicorn.run("Micro_Users.Users_API.main:app", host="0.0.0.0", port=8500, reload=False)
+    uvicorn.run("Micro_Users.Users_API.main:app", host="127.0.0.1", port=8500, reload=False)

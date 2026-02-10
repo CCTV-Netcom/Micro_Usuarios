@@ -10,6 +10,6 @@ class LoginHandler:
 
     def handle(self, cmd: LoginCommand) -> TokenDTO:
         #Realiza el login en keycloak y obtiene el token
-        #cmd es el comando que contiene username, password y totp
-        token = self._svc.login(cmd.username, cmd.password, cmd.totp)
+        #cmd es el comando que contiene username y password
+        token = self._svc.login(cmd.username, cmd.password)
         return TokenDTO(**token)

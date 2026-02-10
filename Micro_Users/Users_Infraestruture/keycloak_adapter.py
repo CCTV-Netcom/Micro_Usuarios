@@ -29,6 +29,9 @@ class KeycloakAdapter(IKeycloakService):
     def _admin_base(self) -> str:
         return f"{self.base_url}/admin/realms/{self.realm}"
 
+    def _userinfo_url(self) -> str:
+        return f"{self.base_url}/realms/{self.realm}/protocol/openid-connect/userinfo"
+
     def _get_admin_token(self) -> str:
         if not (self.client_id and self.client_secret):
             raise InvalidCredentialsException("Client credentials required for admin operations")
@@ -164,6 +167,18 @@ class KeycloakAdapter(IKeycloakService):
         response = requests.post(self._token_url(), data=data, timeout=10)
         response.raise_for_status()
         return response.json()
+
+    def validate_token(self, access_token: str) -> Optional[Dict[str, Any]]:
+        if not access_token:
+            return None
+        headers = {"Authorization": f"Bearer {access_token}"}
+        try:
+            response = requests.get(self._userinfo_url(), headers=headers, timeout=10)
+        except requests.exceptions.RequestException:
+            return None
+        if response.ok:
+            return response.json()
+        return None
 
     def change_password(self, user_id: str, new_password: str, temporary: bool = False) -> None:
         self.set_password(user_id, new_password, temporary=temporary)

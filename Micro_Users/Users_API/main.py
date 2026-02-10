@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, Form
+from fastapi import FastAPI, HTTPException, Form, Request, Response
 from pydantic import BaseModel, EmailStr
 from typing import Optional, Dict, Any
 
@@ -171,10 +171,30 @@ def refresh_token(payload: RefreshTokenDTO):
     return token
 
 
+def _extract_access_token(request: Request) -> str:
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        return auth_header.split(" ", 1)[1].strip()
+    return request.cookies.get("access_token") or request.cookies.get("authToken") or ""
+
+
+@app.get("/auth/validate")
+def validate_token(request: Request):
+    token = _extract_access_token(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
+
+    info = _adapter.validate_token(token)
+    if not info:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    return Response(status_code=204)
+
+
 
 
 
 if __name__ == "__main__":
     import uvicorn
         #el reload colocalo en true cuando estes en desarrollo
-    uvicorn.run("Micro_Users.Users_API.main:app", host="127.0.0.1", port=8500, reload=False)
+    uvicorn.run("Micro_Users.Users_API.main:app", host="127.0.0.1", port=8001, reload=False)

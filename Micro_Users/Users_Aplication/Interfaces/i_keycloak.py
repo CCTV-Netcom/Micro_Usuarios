@@ -38,4 +38,8 @@ class IKeycloakService(ABC):
     def change_password(self, user_id: str, new_password: str, temporary: bool = False) -> None:
         raise NotImplementedError()
 
+    @abstractmethod
+    def assign_realm_role(self, user_id: str, role_name: str) -> None:
+        raise NotImplementedError()
+
     

@@ -10,6 +10,7 @@ class CreateUserHandler:
         self._svc = keycloak_service
 
     def handle(self, cmd: CreateUserCommand) -> Optional[UserDTO]:
+        attributes = {"Cedula": [str(cmd.cedula)]}
         # crea el usuario en keycloak y obtiene el id generado
         created = self._svc.create_user(
             username=cmd.email,
@@ -17,8 +18,11 @@ class CreateUserHandler:
             firstName=cmd.first_name,
             lastName=cmd.last_name,
             password=cmd.password,
-            attributes={"Cedula": [str(cmd.cedula)]} if getattr(cmd, "cedula", None) is not None else None,
+            attributes=attributes,
         )
+
+        if created.get("id"):
+            self._svc.assign_realm_role(created.get("id"), cmd.rol.value)
 
         # intenta obtener la representación completa del usuario
         #Esto es el response que uno ve en fastapi

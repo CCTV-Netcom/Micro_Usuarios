@@ -12,6 +12,7 @@ from Users_Aplication.Commands.UpdateUserCommand import UpdateUserCommand
 from Users_Aplication.Commands.LoginCommand import LoginCommand
 from Users_Aplication.Commands.RefreshTokenCommand import RefreshTokenCommand
 from Users_Aplication.Queries.FindUserByIDQuerie import FindUserByIdQuery
+from Users_Domain.Enums.role import RoleEnum
 
 
 class UserResponse(BaseModel):
@@ -20,6 +21,7 @@ class UserResponse(BaseModel):
     email: Optional[EmailStr] = Field(None, description="Correo electrónico del usuario")
     first_name: Optional[str] = Field(None, description="Nombre")
     last_name: Optional[str] = Field(None, description="Apellido")
+    rol: Optional[str] = Field(None, description="Rol del usuario")
     attributes: Optional[Dict[str, Any]] = Field(None, description="Atributos adicionales del usuario")
 
 
@@ -33,9 +35,15 @@ def create_user(
     first_name: str = Form(...),
     last_name: str = Form(...),
     cedula: int = Form(...),
+    rol: RoleEnum = Form(...),
 ):
     cmd = CreateUserCommand(
-        password=password, email=email, first_name=first_name, last_name=last_name, cedula=cedula
+        password=password,
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+        cedula=cedula,
+        rol=rol,
     )
     user_dto = Mediator.send(cmd)
     if not user_dto:

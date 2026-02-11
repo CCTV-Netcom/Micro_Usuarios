@@ -12,6 +12,11 @@ from Users_Aplication.Handlers.Commands.UpdateUserHandler import UpdateUserHandl
 from Users_Aplication.Handlers.Commands.LoginHandler import LoginHandler
 from Users_Aplication.Handlers.Commands.RefreshTokenHandler import RefreshTokenHandler
 from Users_Aplication.Handlers.Queries.FindUserByIDHandler import FindUserByIdHandler
+from Users_Aplication.Commands.CreateUserCommand import CreateUserCommand
+from Users_Aplication.Commands.UpdateUserCommand import UpdateUserCommand
+from Users_Aplication.Commands.LoginCommand import LoginCommand
+from Users_Aplication.Commands.RefreshTokenCommand import RefreshTokenCommand
+from Users_Aplication.Queries.FindUserByIDQuerie import FindUserByIdQuery
 
 from .middleware import DomainExceptionMiddleware
 from .Controllers.controller import router as users_router
@@ -65,23 +70,23 @@ async def lifespan(app: FastAPI):
     # Register Mediator handlers that delegate to the created handler instances
     # Se registra cada handler en el Mediator
     @Mediator.handler
-    def _create_handler_fn(request):
+    def _create_handler_fn(request: CreateUserCommand):
         return app.state.create_handler.handle(request)
 
     @Mediator.handler
-    def _update_handler_fn(request):
+    def _update_handler_fn(request: UpdateUserCommand):
         return app.state.update_handler.handle(request)
 
     @Mediator.handler
-    def _find_handler_fn(request):
+    def _find_handler_fn(request: FindUserByIdQuery):
         return app.state.find_handler.handle(request)
 
     @Mediator.handler
-    def _login_handler_fn(request):
+    def _login_handler_fn(request: LoginCommand):
         return app.state.login_handler.handle(request)
 
     @Mediator.handler
-    def _refresh_handler_fn(request):
+    def _refresh_handler_fn(request: RefreshTokenCommand):
         return app.state.refresh_handler.handle(request)
 
     yield

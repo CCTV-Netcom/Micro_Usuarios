@@ -32,6 +32,9 @@ class KeycloakAdapter(IKeycloakService):
     def _userinfo_url(self) -> str:
         return f"{self.base_url}/realms/{self.realm}/protocol/openid-connect/userinfo"
 
+    def _realm_role_url(self, role_name: str) -> str:
+        return f"{self._admin_base()}/roles/{role_name}"
+
     def _get_admin_token(self) -> str:
         if not (self.client_id and self.client_secret):
             raise InvalidCredentialsException("Client credentials required for admin operations")
@@ -139,6 +142,7 @@ class KeycloakAdapter(IKeycloakService):
             raise UserNotFoundException(f"User with id {user_id} not found")
         if isinstance(data, list):
             return data[0] if data else None
+        data["realmRoles"] = self._get_user_realm_roles(user_id)
         return data
 
 
@@ -182,3 +186,31 @@ class KeycloakAdapter(IKeycloakService):
 
     def change_password(self, user_id: str, new_password: str, temporary: bool = False) -> None:
         self.set_password(user_id, new_password, temporary=temporary)
+
+    def _get_user_realm_roles(self, user_id: str) -> list[str]:
+        token = self._get_admin_token()
+        url = f"{self._admin_base()}/users/{user_id}/role-mappings/realm"
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(url, headers=headers, timeout=10)
+        if not response.ok:
+            return []
+        roles = response.json()
+        if not isinstance(roles, list):
+            return []
+        return [role.get("name") for role in roles if role.get("name")]
+
+    def assign_realm_role(self, user_id: str, role_name: str) -> None:
+        token = self._get_admin_token()
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+        role_response = requests.get(self._realm_role_url(role_name), headers=headers, timeout=10)
+        if not role_response.ok:
+            raise RuntimeError(f"Role not found in realm: {role_name}")
+
+        role_representation = role_response.json()
+        url = f"{self._admin_base()}/users/{user_id}/role-mappings/realm"
+        response = requests.post(url, json=[role_representation], headers=headers, timeout=10)
+        if not response.ok:
+            raise RuntimeError(
+                f"Error assigning realm role: {response.status_code} {response.text}"
+            )

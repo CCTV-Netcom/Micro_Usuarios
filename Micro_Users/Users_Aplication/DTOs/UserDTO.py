@@ -10,5 +10,6 @@ class UserDTO(BaseModel):
     email: Optional[str] = None
     first_name: Optional[str] = Field(None, alias="firstName")
     last_name: Optional[str] = Field(None, alias="lastName")
+    rol: Optional[str] = None
     attributes: Optional[Dict[str, Any]] = None
 

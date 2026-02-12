@@ -3,6 +3,8 @@ from Users_Aplication.DTOs.UserDTO import UserDTO
 from Users_Aplication.Mappers.user_mapper import user_from_keycloak
 from Users_Aplication.Interfaces.i_keycloak import IKeycloakService
 from typing import Optional
+from pydantic import ValidationError
+from Users_Domain.Entities.user import User
 
 
 class CreateUserHandler:
@@ -10,6 +12,21 @@ class CreateUserHandler:
         self._svc = keycloak_service
 
     def handle(self, cmd: CreateUserCommand) -> Optional[UserDTO]:
+        # validar usando el modelo Pydantic (lanza ValidationError si hay problemas)
+
+        #Me falta validar el rol 
+        try:
+            User(
+                email=cmd.email,
+                first_name=cmd.first_name,
+                last_name=cmd.last_name,
+                password=cmd.password,
+                cedula=cmd.cedula,
+            )
+        except ValidationError as ve:
+            # Propagar la excepción para que el controlador/fastapi la convierta en 422
+            raise ve
+
         attributes = {"Cedula": [str(cmd.cedula)]}
         # crea el usuario en keycloak y obtiene el id generado
         created = self._svc.create_user(

@@ -1,17 +1,18 @@
 from fastapi import APIRouter, HTTPException, Form, Request, Response
-from pydantic import BaseModel, EmailStr, Field
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel, EmailStr, Field, ValidationError
 from typing import Optional, Dict, Any
 from mediatr import Mediator
 
-from Users_Aplication.DTOs.UpdateUserDTO import UpdateUserDTO
-from Users_Aplication.DTOs.LoginDTO import LoginDTO
-from Users_Aplication.DTOs.RefreshTokenDTO import RefreshTokenDTO
-from Users_Aplication.DTOs.TokenDTO import TokenDTO
-from Users_Aplication.Commands.CreateUserCommand import CreateUserCommand
-from Users_Aplication.Commands.UpdateUserCommand import UpdateUserCommand
-from Users_Aplication.Commands.LoginCommand import LoginCommand
-from Users_Aplication.Commands.RefreshTokenCommand import RefreshTokenCommand
-from Users_Aplication.Queries.FindUserByIDQuerie import FindUserByIdQuery
+from Users_Application.DTOs.UpdateUserDTO import UpdateUserDTO
+from Users_Application.DTOs.LoginDTO import LoginDTO
+from Users_Application.DTOs.RefreshTokenDTO import RefreshTokenDTO
+from Users_Application.DTOs.TokenDTO import TokenDTO
+from Users_Application.Commands.CreateUserCommand import CreateUserCommand
+from Users_Application.Commands.UpdateUserCommand import UpdateUserCommand
+from Users_Application.Commands.LoginCommand import LoginCommand
+from Users_Application.Commands.RefreshTokenCommand import RefreshTokenCommand
+from Users_Application.Queries.FindUserByIDQuerie import FindUserByIdQuery
 from Users_Domain.Enums.role import RoleEnum
 
 
@@ -28,7 +29,14 @@ class UserResponse(BaseModel):
 router = APIRouter()
 
 
-@router.post("/users", response_model=UserResponse, summary="Crear usuario", description="Crea un nuevo usuario con los campos especificados.", tags=["Usuarios"])
+@router.post(
+    "/users",
+    response_model=UserResponse,
+    summary="Crear usuario",
+    description="Crea un nuevo usuario con los campos especificados.",
+    tags=["Usuarios"],
+    responses={422: {"description": "Error de validación en los datos enviados"}},
+)
 def create_user(
     password: str = Form(...),
     email: EmailStr = Form(...),
@@ -45,7 +53,14 @@ def create_user(
         cedula=cedula,
         rol=rol,
     )
-    user_dto = Mediator.send(cmd)
+    try:
+        user_dto = Mediator.send(cmd)
+    except ValidationError as e:
+        safe_errors = jsonable_encoder(
+            e.errors(),
+            custom_encoder={Exception: lambda exc: str(exc)},
+        )
+        raise HTTPException(status_code=422, detail=safe_errors)
     if not user_dto:
         raise HTTPException(status_code=500, detail="Failed to create user")
     return UserResponse(**user_dto.model_dump())

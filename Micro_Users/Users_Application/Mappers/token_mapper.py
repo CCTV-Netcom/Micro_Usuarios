@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any
 
-from Users_Aplication.DTOs.TokenDTO import TokenDTO
+from Users_Application.DTOs.TokenDTO import TokenDTO
 
 
 # Mapea los tokens de Keycloak a `TokenDTO` usando `model_validate`.

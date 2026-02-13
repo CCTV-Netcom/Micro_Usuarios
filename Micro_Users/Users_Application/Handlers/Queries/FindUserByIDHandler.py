@@ -1,7 +1,7 @@
-from Users_Aplication.Queries.FindUserByIDQuerie import FindUserByIdQuery
-from Users_Aplication.DTOs.UserDTO import UserDTO
-from Users_Aplication.Mappers.user_mapper import user_from_keycloak
-from Users_Aplication.Interfaces.i_keycloak import IKeycloakService
+from Users_Application.Queries.FindUserByIDQuerie import FindUserByIdQuery
+from Users_Application.DTOs.UserDTO import UserDTO
+from Users_Application.Mappers.user_mapper import user_from_keycloak
+from Users_Application.Interfaces.i_keycloak import IKeycloakService
 from typing import Optional
 from Users_Domain.Exceptions.exceptions import UserNotFoundException
 

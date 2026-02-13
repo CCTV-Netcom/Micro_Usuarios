@@ -1,6 +1,6 @@
 import requests
 from typing import Optional, Dict, Any
-from Users_Aplication.Interfaces.i_keycloak import IKeycloakService
+from Users_Application.Interfaces.i_keycloak import IKeycloakService
 from Users_Domain.Exceptions.exceptions import (
     UserNotFoundException,
     InvalidCredentialsException,
@@ -151,6 +151,8 @@ class KeycloakAdapter(IKeycloakService):
         url = f"{self._admin_base()}/users/{user_id}"
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         response = requests.put(url, json=data, headers=headers, timeout=10)
+        if response.status_code == 404:
+            raise UserNotFoundException(f"User with id {user_id} not found")
         if not response.ok:
             raise RuntimeError(f"Error updating user: {response.status_code} {response.text}")
 

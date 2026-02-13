@@ -1,7 +1,7 @@
-from Users_Aplication.Commands.CreateUserCommand import CreateUserCommand
-from Users_Aplication.DTOs.UserDTO import UserDTO
-from Users_Aplication.Mappers.user_mapper import user_from_keycloak
-from Users_Aplication.Interfaces.i_keycloak import IKeycloakService
+from Users_Application.Commands.CreateUserCommand import CreateUserCommand
+from Users_Application.DTOs.UserDTO import UserDTO
+from Users_Application.Mappers.user_mapper import user_from_keycloak
+from Users_Application.Interfaces.i_keycloak import IKeycloakService
 from typing import Optional
 from pydantic import ValidationError
 from Users_Domain.Entities.user import User
@@ -14,7 +14,7 @@ class CreateUserHandler:
     def handle(self, cmd: CreateUserCommand) -> Optional[UserDTO]:
         # validar usando el modelo Pydantic (lanza ValidationError si hay problemas)
 
-        #Me falta validar el rol 
+        
         try:
             User(
                 email=cmd.email,
@@ -22,6 +22,7 @@ class CreateUserHandler:
                 last_name=cmd.last_name,
                 password=cmd.password,
                 cedula=cmd.cedula,
+                rol=cmd.rol
             )
         except ValidationError as ve:
             # Propagar la excepción para que el controlador/fastapi la convierta en 422

@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any
 
-from Users_Aplication.DTOs.UserDTO import UserDTO
+from Users_Application.DTOs.UserDTO import UserDTO
 from Users_Domain.Enums.role import RoleEnum
 
 

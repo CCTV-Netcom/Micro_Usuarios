@@ -1,6 +1,6 @@
-from Users_Aplication.Commands.RefreshTokenCommand import RefreshTokenCommand
-from Users_Aplication.DTOs.TokenDTO import TokenDTO
-from Users_Aplication.Interfaces.i_keycloak import IKeycloakService
+from Users_Application.Commands.RefreshTokenCommand import RefreshTokenCommand
+from Users_Application.DTOs.TokenDTO import TokenDTO
+from Users_Application.Interfaces.i_keycloak import IKeycloakService
 
 
 class RefreshTokenHandler:

@@ -1,7 +1,7 @@
-from Users_Aplication.Commands.UpdateUserCommand import UpdateUserCommand
-from Users_Aplication.DTOs.UserDTO import UserDTO
-from Users_Aplication.Mappers.user_mapper import user_from_keycloak
-from Users_Aplication.Interfaces.i_keycloak import IKeycloakService
+from Users_Application.Commands.UpdateUserCommand import UpdateUserCommand
+from Users_Application.DTOs.UserDTO import UserDTO
+from Users_Application.Mappers.user_mapper import user_from_keycloak
+from Users_Application.Interfaces.i_keycloak import IKeycloakService
 from typing import Optional
 
 
@@ -18,11 +18,7 @@ class UpdateUserHandler:
 
         # intenta obtener la representación completa del usuario actualizado
         #Esto es el response que uno ve en fastapi
-        #Si no se puede obtener, retorna None
-        try:
-            user_info = self._svc.find_user_by_id(cmd.user_id)
-        except Exception:
-            user_info = None
+        user_info = self._svc.find_user_by_id(cmd.user_id)
 
         if user_info:
             return user_from_keycloak(user_info)

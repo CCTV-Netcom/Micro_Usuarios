@@ -4,6 +4,8 @@ from typing import Callable
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
 from fastapi import Request
+from fastapi.encoders import jsonable_encoder
+from pydantic import ValidationError
 
 from Users_Domain.Exceptions.exceptions import (
     UserNotFoundException,
@@ -30,6 +32,12 @@ class DomainExceptionMiddleware(BaseHTTPMiddleware):
             return JSONResponse(status_code=409, content={"detail": str(e) or "Email already exists"})
         except RuntimeError as e:
             return JSONResponse(status_code=400, content={"detail": str(e)})
+        except ValidationError as e:
+            safe_errors = jsonable_encoder(
+                e.errors(),
+                custom_encoder={Exception: lambda exc: str(exc)},
+            )
+            return JSONResponse(status_code=422, content={"detail": safe_errors})
         except Exception as e:
             logger.exception("Unhandled exception during request")
             return JSONResponse(status_code=500, content={"detail": "Internal server error"})

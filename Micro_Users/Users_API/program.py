@@ -6,17 +6,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from mediatr import Mediator
 
-from Users_Infraestruture.keycloak_adapter import KeycloakAdapter
-from Users_Aplication.Handlers.Commands.CreateUserHandler import CreateUserHandler
-from Users_Aplication.Handlers.Commands.UpdateUserHandler import UpdateUserHandler
-from Users_Aplication.Handlers.Commands.LoginHandler import LoginHandler
-from Users_Aplication.Handlers.Commands.RefreshTokenHandler import RefreshTokenHandler
-from Users_Aplication.Handlers.Queries.FindUserByIDHandler import FindUserByIdHandler
-from Users_Aplication.Commands.CreateUserCommand import CreateUserCommand
-from Users_Aplication.Commands.UpdateUserCommand import UpdateUserCommand
-from Users_Aplication.Commands.LoginCommand import LoginCommand
-from Users_Aplication.Commands.RefreshTokenCommand import RefreshTokenCommand
-from Users_Aplication.Queries.FindUserByIDQuerie import FindUserByIdQuery
+from Users_Infrastruture.keycloak_adapter import KeycloakAdapter
+from Users_Application.Handlers.Commands.CreateUserHandler import CreateUserHandler
+from Users_Application.Handlers.Commands.UpdateUserHandler import UpdateUserHandler
+from Users_Application.Handlers.Commands.LoginHandler import LoginHandler
+from Users_Application.Handlers.Commands.RefreshTokenHandler import RefreshTokenHandler
+from Users_Application.Handlers.Queries.FindUserByIDHandler import FindUserByIdHandler
+from Users_Application.Commands.CreateUserCommand import CreateUserCommand
+from Users_Application.Commands.UpdateUserCommand import UpdateUserCommand
+from Users_Application.Commands.LoginCommand import LoginCommand
+from Users_Application.Commands.RefreshTokenCommand import RefreshTokenCommand
+from Users_Application.Queries.FindUserByIDQuerie import FindUserByIdQuery
 
 from .middleware import DomainExceptionMiddleware
 from .Controllers.controller import router as users_router

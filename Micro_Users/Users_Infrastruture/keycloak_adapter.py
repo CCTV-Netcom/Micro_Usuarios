@@ -32,6 +32,9 @@ class KeycloakAdapter(IKeycloakService):
     def _userinfo_url(self) -> str:
         return f"{self.base_url}/realms/{self.realm}/protocol/openid-connect/userinfo"
 
+    def _introspect_url(self) -> str:
+        return f"{self.base_url}/realms/{self.realm}/protocol/openid-connect/token/introspect"
+
     def _realm_role_url(self, role_name: str) -> str:
         return f"{self._admin_base()}/roles/{role_name}"
 
@@ -157,7 +160,13 @@ class KeycloakAdapter(IKeycloakService):
             raise RuntimeError(f"Error updating user: {response.status_code} {response.text}")
 
     def login(self, username: str, password: str) -> Dict[str, Any]:
-        data = {"grant_type": "password", "client_id": self.client_id, "username": username, "password": password}
+        data = {
+            "grant_type": "password",
+            "client_id": self.client_id,
+            "username": username,
+            "password": password,
+            "scope": "openid profile email",
+        }
         if self.client_secret:
             data["client_secret"] = self.client_secret
         response = requests.post(self._token_url(), data=data, timeout=10)
@@ -184,6 +193,27 @@ class KeycloakAdapter(IKeycloakService):
             return None
         if response.ok:
             return response.json()
+        # Fallback for realms/clients where userinfo is restricted (e.g., 403)
+        # Uses client credentials and checks token active status via introspection.
+        if not (self.client_id and self.client_secret):
+            return None
+        data = {
+            "token": access_token,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+        }
+        try:
+            introspect_response = requests.post(self._introspect_url(), data=data, timeout=10)
+        except requests.exceptions.RequestException:
+            return None
+        if not introspect_response.ok:
+            return None
+        try:
+            payload = introspect_response.json()
+        except ValueError:
+            return None
+        if payload.get("active") is True:
+            return payload
         return None
 
     def change_password(self, user_id: str, new_password: str, temporary: bool = False) -> None:

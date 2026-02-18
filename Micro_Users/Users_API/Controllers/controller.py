@@ -45,6 +45,7 @@ def create_user(
     cedula: int = Form(...),
     rol: RoleEnum = Form(...),
 ):
+    """Crea un usuario y retorna su representación pública."""
     cmd = CreateUserCommand(
         password=password,
         email=email,
@@ -68,6 +69,7 @@ def create_user(
 
 @router.put("/users/{user_id}", response_model=UserResponse, summary="Actualizar usuario", description="Actualiza campos del usuario especificado.", tags=["Usuarios"])
 def update_user(user_id: str, payload: UpdateUserDTO):
+    """Actualiza un usuario por su identificador."""
     cmd = UpdateUserCommand(user_id=user_id, **payload.model_dump())
     user_dto = Mediator.send(cmd)
     if user_dto is None:
@@ -77,6 +79,7 @@ def update_user(user_id: str, payload: UpdateUserDTO):
 
 @router.get("/users/{user_id}", response_model=UserResponse, summary="Obtener usuario", description="Devuelve la información del usuario por su ID.", tags=["Usuarios"])
 def find_user_by_id(user_id: str):
+    """Busca un usuario por ID."""
     query = FindUserByIdQuery(user_id=user_id)
     user_dto = Mediator.send(query)
     if not user_dto:
@@ -86,6 +89,7 @@ def find_user_by_id(user_id: str):
 
 @router.post("/auth/login", response_model=TokenDTO, summary="Login", description="Inicia sesión y devuelve un token de acceso.", tags=["Auth"])
 def login(payload: LoginDTO):
+    """Autentica al usuario y devuelve tokens."""
     cmd = LoginCommand(**payload.model_dump())
     try:
         token = Mediator.send(cmd)
@@ -96,6 +100,7 @@ def login(payload: LoginDTO):
 
 @router.post("/auth/refresh", response_model=TokenDTO, summary="Refresh token", description="Renueva el token de acceso usando el refresh token.", tags=["Auth"])
 def refresh_token(payload: RefreshTokenDTO):
+    """Renueva un access token a partir de refresh token."""
     cmd = RefreshTokenCommand(**payload.model_dump())
     try:
         token = Mediator.send(cmd)
@@ -105,6 +110,7 @@ def refresh_token(payload: RefreshTokenDTO):
 
 
 def _extract_access_token(request: Request) -> str:
+    """Obtiene bearer token desde header Authorization o cookies compatibles."""
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.lower().startswith("bearer "):
         return auth_header.split(" ", 1)[1].strip()
@@ -113,6 +119,7 @@ def _extract_access_token(request: Request) -> str:
 
 @router.get("/auth/validate", summary="Validar token", description="Valida el token de acceso enviado en header o cookie.", tags=["Auth"])
 def validate_token(request: Request):
+    """Valida token de acceso y responde 204 si es válido."""
     token = _extract_access_token(request)
     if not token:
         raise HTTPException(status_code=401, detail="Missing token")

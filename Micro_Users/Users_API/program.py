@@ -22,7 +22,7 @@ from .middleware import DomainExceptionMiddleware
 from .Controllers.controller import router as users_router
 
 
-#Carga las variables de entorno desde el archivo .env ubicado en la raíz del proyecto (Micro_Users/.env)
+# Carga variables de entorno desde Micro_Users/.env.
 env_path = Path(__file__).resolve().parent.parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
@@ -30,6 +30,7 @@ if env_path.exists():
 # y los registra en el Mediator para que puedan ser usados en los controladores (routers)
 
 def build_adapter_from_env() -> KeycloakAdapter:
+    """Construye el adaptador de Keycloak a partir de variables de entorno requeridas."""
     url = os.environ.get("KEYCLOAK_URL")
     realm = os.environ.get("KEYCLOAK_REALM")
     client_id = os.environ.get("KEYCLOAK_CLIENT_ID")
@@ -55,9 +56,7 @@ def build_adapter_from_env() -> KeycloakAdapter:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    
-    #Crea un app.state para almacenar la instancia del adaptador y los handlers, esto permite que sean 
-    # compartidos entre las peticiones sin necesidad de crear una nueva instancia cada vez
+    """Inicializa dependencias y registra handlers del Mediator durante el ciclo de vida de la app."""
     adapter = build_adapter_from_env()
     app.state.adapter = adapter
 
@@ -67,8 +66,7 @@ async def lifespan(app: FastAPI):
     app.state.login_handler = LoginHandler(adapter)
     app.state.refresh_handler = RefreshTokenHandler(adapter)
 
-    # Register Mediator handlers that delegate to the created handler instances
-    # Se registra cada handler en el Mediator
+    # Registra handlers del Mediator delegando a instancias creadas en app.state.
     @Mediator.handler
     def _create_handler_fn(request: CreateUserCommand):
         return app.state.create_handler.handle(request)
@@ -91,9 +89,9 @@ async def lifespan(app: FastAPI):
 
     yield
 
-#Se configura fastapi y se le asignan el titulo y el lifespan y se agrega el middleware para manejar las excepciones
+# Configuración principal de FastAPI.
 app = FastAPI(title="Users - Keycloak Adapter API", lifespan=lifespan)
 app.add_middleware(DomainExceptionMiddleware)
 
-# Incluye el router de usuarios en la app, esto hace que las rutas (los endpoints) definidos en el router estén disponibles en la app
+# Expone endpoints de usuarios y autenticación.
 app.include_router(users_router)

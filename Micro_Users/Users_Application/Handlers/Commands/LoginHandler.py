@@ -4,12 +4,12 @@ from Users_Application.Interfaces.i_keycloak import IKeycloakService
 
 
 class LoginHandler:
-    #Se instancia el servicio de keycloak por inyeccion de dependencias
+    """Caso de uso para autenticación por usuario/contraseña."""
+
     def __init__(self, keycloak_service: IKeycloakService):
         self._svc = keycloak_service
 
     def handle(self, cmd: LoginCommand) -> TokenDTO:
-        #Realiza el login en keycloak y obtiene el token
-        #cmd es el comando que contiene username y password
+        """Ejecuta login en Keycloak y mapea el resultado a `TokenDTO`."""
         token = self._svc.login(cmd.username, cmd.password)
         return TokenDTO(**token)

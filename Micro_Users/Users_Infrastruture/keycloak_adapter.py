@@ -7,10 +7,10 @@ from Users_Domain.Exceptions.exceptions import (
     InvalidEmailFormatException,
     EmailAlreadyExistsException,
 )
-#Esta es la implementacion concreta de la interfaz IKeycloakService
-#Aca se usan excepciones personalizadas del dominio de usuarios
 
 class KeycloakAdapter(IKeycloakService):
+    """Implementación concreta de `IKeycloakService` basada en la API REST de Keycloak."""
+
     def __init__(
         self,
         base_url: str,
@@ -57,7 +57,6 @@ class KeycloakAdapter(IKeycloakService):
         raise InvalidCredentialsException("Failed to obtain access token with client credentials")
     
     
-    #Metodo de crear usuario
     def create_user(
         self,
         username: str,
@@ -67,9 +66,9 @@ class KeycloakAdapter(IKeycloakService):
         password: Optional[str] = None,
         attributes: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
+        """Crea un usuario en Keycloak y establece contraseña inicial."""
         token = self._get_admin_token()
         url = f"{self._admin_base()}/users"
-        # Ensure username is the same as email when email is provided
         if not email:
             raise InvalidEmailFormatException("email is required and will be used as username")
         
@@ -85,7 +84,6 @@ class KeycloakAdapter(IKeycloakService):
             payload["firstName"] = firstName
         if lastName:
             payload["lastName"] = lastName
-        # include attributes if provided (Keycloak expects attribute values as lists)
         if attributes:
             attrs_payload: Dict[str, Any] = {}
             for k, v in attributes.items():
@@ -115,11 +113,9 @@ class KeycloakAdapter(IKeycloakService):
             self.set_password(user_id, password, temporary=False)
 
         return {"id": user_id, "username": username}
-    
 
-
-    #Metodo que se llama desde el crear usuario para establecer la contraseña del usuario creado, usando el endpoint de reset-password de Keycloak
     def set_password(self, user_id: str, new_password: str, temporary: bool = False) -> None:
+        """Actualiza contraseña del usuario usando endpoint `reset-password`."""
         token = self._get_admin_token()
         url = f"{self._admin_base()}/users/{user_id}/reset-password"
         payload = {"type": "password", "value": new_password, "temporary": temporary}
@@ -139,8 +135,6 @@ class KeycloakAdapter(IKeycloakService):
                 raise UserNotFoundException(f"User with id {user_id} not found") from e
             raise
         data = response.json()
-        # Keycloak returns a single user object for GET /users/{id}.
-        # Some code may assume a list; handle both dict and list safely.
         if not data:
             raise UserNotFoundException(f"User with id {user_id} not found")
         if isinstance(data, list):
@@ -193,8 +187,6 @@ class KeycloakAdapter(IKeycloakService):
             return None
         if response.ok:
             return response.json()
-        # Fallback for realms/clients where userinfo is restricted (e.g., 403)
-        # Uses client credentials and checks token active status via introspection.
         if not (self.client_id and self.client_secret):
             return None
         data = {

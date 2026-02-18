@@ -1,40 +1,25 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from Users_API import main as users_main
-from Users_Aplication.DTOs.UserDTO import UserDTO
-from Users_Aplication.DTOs.TokenDTO import TokenDTO
-from Users_Domain.Exceptions.exceptions import UserNotFoundException
+from Users_API import program as users_program
+from Users_Application.DTOs.TokenDTO import TokenDTO
+from Users_Application.DTOs.UserDTO import UserDTO
 
 
 class FakeAdapter:
     def __init__(self):
         self.realm = "test-realm"
 
-    def create_user(self, username=None, email=None, firstName=None, lastName=None, password=None, attributes=None):
-        return {"id": "u-1", "username": email or username or "user"}
-
-    def update_user(self, user_id: str, data):
+    def validate_token(self, token: str):
+        if token == "valid-token":
+            return {"active": True, "sub": "u-1"}
         return None
 
-    def find_user_by_id(self, user_id: str):
-        if user_id == "missing":
-            raise UserNotFoundException("User not found")
-        return {"id": user_id, "username": "user", "email": "user@example.com"}
-
-    def login(self, username: str, password: str):
-        return {"access_token": "access", "refresh_token": "refresh"}
-
-    def refresh_token(self, refresh_token: str):
-        return {"access_token": "access2", "refresh_token": "refresh2"}
-
-# pytest fixture para crear un cliente de prueba con el adaptador simulado
-#En este caso lo usamos para llamar a los endpoints de la API y verificar que las respuestas sean correctas, sin necesidad de depender de una implementación real del adaptador o de la base de datos.
 
 @pytest.fixture()
 def client(monkeypatch):
-    monkeypatch.setattr(users_main, "build_adapter_from_env", lambda: FakeAdapter())
-    with TestClient(users_main.app) as test_client:
+    monkeypatch.setattr(users_program, "build_adapter_from_env", lambda: FakeAdapter())
+    with TestClient(users_program.app) as test_client:
         yield test_client
 
 
@@ -45,18 +30,20 @@ def test_create_user_ok(client, monkeypatch):
         email="user@example.com",
         first_name="User",
         last_name="Test",
-        attributes={"Cedula": ["123"]},
+        rol="Operador",
+        attributes={"Cedula": ["12345678"]},
     )
-    monkeypatch.setattr(users_main.Mediator, "send", lambda cmd: user_dto)
+    monkeypatch.setattr(users_program.Mediator, "send", lambda _: user_dto)
 
     response = client.post(
         "/users",
         data={
-            "password": "secret",
+            "password": "Password123!",
             "email": "user@example.com",
             "first_name": "User",
             "last_name": "Test",
-            "cedula": 123,
+            "cedula": 12345678,
+            "rol": "Operador",
         },
     )
 
@@ -65,43 +52,25 @@ def test_create_user_ok(client, monkeypatch):
     assert response.json()["email"] == "user@example.com"
 
 
-# Tengo que implementar logica para validar el middelware de validacion de cedula, por eso comento este test que falla 
-# def test_create_user_cedula_not_int(client):
-    
-#     response = client.post(
-#         "/users",
-#         data={
-#             "password": "secret",
-#             "email": "user@example.com",
-#             "first_name": "User",
-#             "last_name": "Test",
-#             "cedula": "V-23320983",
-#         },
-#     )
-#     assert response.status_code == 422
-#     detail = response.json()["detail"][0]
-#     assert detail["loc"] == ["body", "cedula"]
-#     assert "value is not a valid integer" in detail["msg"]
-
-
 def test_create_user_failure(client, monkeypatch):
-    monkeypatch.setattr(users_main.Mediator, "send", lambda cmd: None)
+    monkeypatch.setattr(users_program.Mediator, "send", lambda _: None)
 
     response = client.post(
         "/users",
         data={
-            "password": "secret",
+            "password": "Password123!",
             "email": "user@example.com",
             "first_name": "User",
             "last_name": "Test",
-            "cedula": 123,
+            "cedula": 12345678,
+            "rol": "Operador",
         },
     )
 
     assert response.status_code == 500
     assert response.json()["detail"] == "Failed to create user"
 
-            
+
 def test_update_user_ok(client, monkeypatch):
     user_dto = UserDTO(
         id="u-2",
@@ -109,9 +78,10 @@ def test_update_user_ok(client, monkeypatch):
         email="user2@example.com",
         first_name="New",
         last_name="Name",
+        rol="Administrador",
         attributes=None,
     )
-    monkeypatch.setattr(users_main.Mediator, "send", lambda cmd: user_dto)
+    monkeypatch.setattr(users_program.Mediator, "send", lambda _: user_dto)
 
     response = client.put(
         "/users/u-2",
@@ -124,7 +94,7 @@ def test_update_user_ok(client, monkeypatch):
 
 
 def test_update_user_not_found(client, monkeypatch):
-    monkeypatch.setattr(users_main.Mediator, "send", lambda cmd: None)
+    monkeypatch.setattr(users_program.Mediator, "send", lambda _: None)
 
     response = client.put(
         "/users/u-404",
@@ -136,7 +106,7 @@ def test_update_user_not_found(client, monkeypatch):
 
 
 def test_find_user_not_found(client, monkeypatch):
-    monkeypatch.setattr(users_main.Mediator, "send", lambda cmd: None)
+    monkeypatch.setattr(users_program.Mediator, "send", lambda _: None)
 
     response = client.get("/users/u-404")
 
@@ -151,9 +121,10 @@ def test_find_user_ok(client, monkeypatch):
         email="find@example.com",
         first_name="Find",
         last_name="User",
+        rol="Operador",
         attributes=None,
     )
-    monkeypatch.setattr(users_main.Mediator, "send", lambda cmd: user_dto)
+    monkeypatch.setattr(users_program.Mediator, "send", lambda _: user_dto)
 
     response = client.get("/users/u-10")
 
@@ -163,11 +134,11 @@ def test_find_user_ok(client, monkeypatch):
 
 def test_login_ok(client, monkeypatch):
     token_dto = TokenDTO(access_token="access", refresh_token="refresh")
-    monkeypatch.setattr(users_main.Mediator, "send", lambda cmd: token_dto)
+    monkeypatch.setattr(users_program.Mediator, "send", lambda _: token_dto)
 
     response = client.post(
         "/auth/login",
-        json={"username": "user@example.com", "password": "secret"},
+        json={"username": "user@example.com", "password": "Password123!"},
     )
 
     assert response.status_code == 200
@@ -175,10 +146,10 @@ def test_login_ok(client, monkeypatch):
 
 
 def test_login_invalid_credentials(client, monkeypatch):
-    def _raise(cmd):
+    def _raise(_):
         raise Exception("invalid")
 
-    monkeypatch.setattr(users_main.Mediator, "send", _raise)
+    monkeypatch.setattr(users_program.Mediator, "send", _raise)
 
     response = client.post(
         "/auth/login",
@@ -191,7 +162,7 @@ def test_login_invalid_credentials(client, monkeypatch):
 
 def test_refresh_token_ok(client, monkeypatch):
     token_dto = TokenDTO(access_token="access2", refresh_token="refresh2")
-    monkeypatch.setattr(users_main.Mediator, "send", lambda cmd: token_dto)
+    monkeypatch.setattr(users_program.Mediator, "send", lambda _: token_dto)
 
     response = client.post(
         "/auth/refresh",
@@ -203,10 +174,10 @@ def test_refresh_token_ok(client, monkeypatch):
 
 
 def test_refresh_token_invalid(client, monkeypatch):
-    def _raise(cmd):
+    def _raise(_):
         raise Exception("invalid refresh")
 
-    monkeypatch.setattr(users_main.Mediator, "send", _raise)
+    monkeypatch.setattr(users_program.Mediator, "send", _raise)
 
     response = client.post(
         "/auth/refresh",
@@ -215,3 +186,20 @@ def test_refresh_token_invalid(client, monkeypatch):
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid refresh token"
+
+
+def test_validate_token_ok_from_authorization_header(client):
+    response = client.get("/auth/validate", headers={"Authorization": "Bearer valid-token"})
+    assert response.status_code == 204
+
+
+def test_validate_token_missing(client):
+    response = client.get("/auth/validate")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Missing token"
+
+
+def test_validate_token_invalid(client):
+    response = client.get("/auth/validate", headers={"Authorization": "Bearer invalid-token"})
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid token"

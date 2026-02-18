@@ -7,12 +7,13 @@ from Users_Domain.Exceptions.exceptions import UserNotFoundException
 
 
 class FindUserByIdHandler:
-    #Se instancia el servicio de keycloak por inyeccion de dependencias
+    """Caso de uso para consulta de usuario por identificador."""
+
     def __init__(self, keycloak_service: IKeycloakService):
         self._svc = keycloak_service
 
     def handle(self, query: FindUserByIdQuery) -> Optional[UserDTO]:
-        #El handler recibe el comando FindUserByIdQuery y retorna un UserDTO o None
+        """Retorna el usuario mapeado o `None` si no existe."""
         try:
             user = self._svc.find_user_by_id(query.user_id)
         except UserNotFoundException:

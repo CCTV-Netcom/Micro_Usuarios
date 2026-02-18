@@ -6,12 +6,13 @@ from typing import Optional
 
 
 class UpdateUserHandler:
-    #Se instancia el servicio de keycloak por inyeccion de dependencias
+    """Caso de uso para actualizar datos de un usuario."""
+
     def __init__(self, keycloak_service: IKeycloakService):
         self._svc = keycloak_service
-    #El handler recibe el comando UpdateUserCommand y retorna un UserDTO o None
+
     def handle(self, cmd: UpdateUserCommand) -> Optional[UserDTO]:
-        # Aca llama la funcion de payload del comando para saber que datos actualizar
+        """Actualiza el usuario y retorna la representación más reciente."""
         payload = cmd.to_payload()
         # actualiza el usuario en keycloak
         self._svc.update_user(cmd.user_id, payload)

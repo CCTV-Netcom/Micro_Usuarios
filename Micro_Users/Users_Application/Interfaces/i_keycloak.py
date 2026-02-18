@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
 
-#Esta es la interfaz para interactuar con el servicio de Keycloak
-#Es un contrato que debe cumplir cualquier implementacion concreta de Keycloak
-#El adaptador de esta puerto debe estar en la capa de infraestructura
 class IKeycloakService(ABC):
+    """Puerto de aplicación para operaciones de usuarios/autenticación en Keycloak."""
+
     @abstractmethod
     def create_user(
         self,

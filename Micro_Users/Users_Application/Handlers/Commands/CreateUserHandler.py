@@ -8,13 +8,13 @@ from Users_Domain.Entities.user import User
 
 
 class CreateUserHandler:
+    """Caso de uso para crear usuarios y asignar rol en Keycloak."""
+
     def __init__(self, keycloak_service: IKeycloakService):
         self._svc = keycloak_service
 
     def handle(self, cmd: CreateUserCommand) -> Optional[UserDTO]:
-        # validar usando el modelo Pydantic (lanza ValidationError si hay problemas)
-
-        
+        """Valida datos de dominio, crea usuario y devuelve `UserDTO`."""
         try:
             User(
                 email=cmd.email,
@@ -29,7 +29,6 @@ class CreateUserHandler:
             raise ve
 
         attributes = {"Cedula": [str(cmd.cedula)]}
-        # crea el usuario en keycloak y obtiene el id generado
         created = self._svc.create_user(
             username=cmd.email,
             email=cmd.email,
@@ -42,9 +41,6 @@ class CreateUserHandler:
         if created.get("id"):
             self._svc.assign_realm_role(created.get("id"), cmd.rol.value)
 
-        # intenta obtener la representación completa del usuario
-        #Esto es el response que uno ve en fastapi
-        #Si no se puede obtener, retorna un DTO mínimo
         user_info = None
         try:
             user_info = self._svc.find_user_by_id(created.get("id"))

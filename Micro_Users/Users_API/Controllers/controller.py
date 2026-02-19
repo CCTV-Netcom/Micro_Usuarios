@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, Form, Request, Response
+import os
+
+from fastapi import APIRouter, HTTPException, Form, Request, Response, Body
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, EmailStr, Field, ValidationError
 from typing import Optional, Dict, Any
@@ -27,6 +29,47 @@ class UserResponse(BaseModel):
 
 
 router = APIRouter()
+
+ACCESS_TOKEN_MAX_AGE = 60 * 60
+REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 7
+AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "none").lower()
+
+if AUTH_COOKIE_SAMESITE not in {"lax", "strict", "none"}:
+    AUTH_COOKIE_SAMESITE = "none"
+
+
+class AuthSessionResponse(BaseModel):
+    detail: str
+    access_token: Optional[str] = None
+
+
+def _set_auth_cookies(response: Response, token: TokenDTO) -> None:
+    response.set_cookie(
+        key="access_token",
+        value=token.access_token,
+        httponly=True,
+        secure=True,
+        samesite=AUTH_COOKIE_SAMESITE,
+        max_age=ACCESS_TOKEN_MAX_AGE,
+        path="/",
+    )
+
+    if token.refresh_token:
+        response.set_cookie(
+            key="refresh_token",
+            value=token.refresh_token,
+            httponly=True,
+            secure=True,
+            samesite=AUTH_COOKIE_SAMESITE,
+            max_age=REFRESH_TOKEN_MAX_AGE,
+            path="/",
+        )
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/")
+    response.delete_cookie(key="authToken", path="/")
 
 
 @router.post(
@@ -87,26 +130,61 @@ def find_user_by_id(user_id: str):
     return UserResponse(**user_dto.model_dump())
 
 
-@router.post("/auth/login", response_model=TokenDTO, summary="Login", description="Inicia sesión y devuelve un token de acceso.", tags=["Auth"])
-def login(payload: LoginDTO):
-    """Autentica al usuario y devuelve tokens."""
+@router.post(
+    "/auth/login",
+    response_model=AuthSessionResponse,
+    summary="Login",
+    description="Inicia sesión y establece cookies seguras de autenticación.",
+    tags=["Auth"],
+)
+def login(payload: LoginDTO, response: Response):
+    """Autentica al usuario y establece cookies de sesión seguras."""
     cmd = LoginCommand(**payload.model_dump())
     try:
         token = Mediator.send(cmd)
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return token
+    _set_auth_cookies(response, token)
+    return AuthSessionResponse(detail="Login successful", access_token=token.access_token)
 
 
-@router.post("/auth/refresh", response_model=TokenDTO, summary="Refresh token", description="Renueva el token de acceso usando el refresh token.", tags=["Auth"])
-def refresh_token(payload: RefreshTokenDTO):
-    """Renueva un access token a partir de refresh token."""
-    cmd = RefreshTokenCommand(**payload.model_dump())
+@router.post(
+    "/auth/refresh",
+    response_model=AuthSessionResponse,
+    summary="Refresh token",
+    description="Renueva la sesión usando refresh token desde body o cookie segura.",
+    tags=["Auth"],
+)
+def refresh_token(
+    request: Request,
+    response: Response,
+    payload: dict | None = Body(default=None),
+):
+    """Renueva cookies de sesión usando refresh token."""
+    refresh_token_value = (payload or {}).get("refresh_token") or request.cookies.get("refresh_token", "")
+    if not refresh_token_value:
+        raise HTTPException(status_code=401, detail="Missing refresh token")
+
+    cmd = RefreshTokenCommand(refresh_token=refresh_token_value)
     try:
         token = Mediator.send(cmd)
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
-    return token
+    _set_auth_cookies(response, token)
+    return AuthSessionResponse(detail="Session refreshed", access_token=token.access_token)
+
+
+@router.post(
+    "/auth/logout",
+    response_model=AuthSessionResponse,
+    summary="Logout",
+    description="Cierra sesión y limpia cookies de autenticación.",
+    tags=["Auth"],
+)
+def logout(response: Response):
+    """Cierra la sesión actual borrando cookies de autenticación."""
+    _clear_auth_cookies(response)
+    return AuthSessionResponse(detail="Logout successful")
 
 
 def _extract_access_token(request: Request) -> str:

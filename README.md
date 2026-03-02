@@ -90,11 +90,29 @@ cp .env.example .env
 ```
 
 Variables esperadas:
-- `KEYCLOAK_URL`
-- `KEYCLOAK_REALM`
-- `KEYCLOAK_CLIENT_ID`
-- `KEYCLOAK_CLIENT_SECRET`
-- (Opcionales) `KEYCLOAK_ADMIN_USER`, `KEYCLOAK_ADMIN_PASS`
+- `VAULT_ADDR`
+- `ROLE_ID`
+- `SECRET_ID`
+- `VAULT_KV_MOUNT`
+- `VAULT_KEYCLOAK_SECRET_PATH`
+
+Este microservicio toma la configuración de Keycloak únicamente desde Hashi Vault
+(`VAULT_KEYCLOAK_SECRET_PATH`) y no requiere `KEYCLOAK_*` en `.env`.
+
+## 🧹 Se quitaron las credenciales de Keycloak en `.env`
+
+1. Se movieron los valores de Keycloak a Vault (`VAULT_KEYCLOAK_SECRET_PATH`).
+2. En esa ruta debes guardar (`KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`).
+3. Ahora en `Micro_Users/.env` solo van variables de bootstrap de Hashi Vault.
+4. Las variables de Keycloak se toman de Hashi Vault al iniciar el servidor.
+
+### ✅ Variables de ejemplo para Vault (Keycloak)
+
+Debes tener estas variables en la ruta (`VAULT_KEYCLOAK_SECRET_PATH`):
+- `KEYCLOAK_URL` = `https://keycloak.netcomplusve.com`
+- `KEYCLOAK_REALM` = `netcom-cctv`
+- `KEYCLOAK_CLIENT_ID` = `micro-users`
+- `KEYCLOAK_CLIENT_SECRET` = `tu_secreto_real`
 
 ---
 

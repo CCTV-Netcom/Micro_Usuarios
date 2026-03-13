@@ -1,90 +1,84 @@
 # Micro_Usuarios 🔐👤
 
-![banner](https://dummyimage.com/1200x300/0b1b2b/ffffff&text=Micro_Usuarios+%E2%80%94+Netcom+CCTV)
+![banner](https://dummyimage.com/1200x300/0b1b2b/ffffff&text=Micro_Usuarios+-+Netcom+CCTV)
 
 ![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.128.0-009688?logo=fastapi&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.128.1-009688?logo=fastapi&logoColor=white)
 ![Pydantic](https://img.shields.io/badge/Pydantic-2.12.5-e92063?logo=pydantic&logoColor=white)
 ![Uvicorn](https://img.shields.io/badge/Uvicorn-0.40.0-4051b5?logo=uvicorn&logoColor=white)
 
-Microservicio de **usuarios y autenticación** para el sistema CCTV Netcom. Incluye registro, login, refresh token y manejo de TOTP.
-
----
+Microservicio de usuarios y autenticacion para Netcom CCTV. Gestiona ciclo de vida de usuario y sesiones contra Keycloak, con bootstrap seguro desde Hashi Vault.
 
 ## 🧱 Arquitectura
-Se usa una **arquitectura por capas** (inspirada en Clean/Hexagonal):
+Arquitectura por capas:
+- 🌐 API: endpoints y middleware HTTP.
+- 🧠 Application: comandos, queries, handlers y DTOs.
+- 🧩 Domain: entidades, enums y excepciones.
+- 🔌 Infrastructure: Vault y adaptador de Keycloak.
+- 🧪 Test: pruebas por capa.
 
-- **API**: controladores HTTP y orquestación de casos de uso.
-- **Application**: comandos/queries, handlers y DTOs.
-- **Domain**: entidades y excepciones de negocio.
-- **Infrastructure**: adaptadores externos (Keycloak y persistencia/servicios).
-
-Esta separación mantiene la lógica de negocio independiente de frameworks y detalles de infraestructura.
-
----
-
-## 🧰 Tecnologías y versiones
-- **Python**: 3.x
-- **FastAPI**: 0.128.0
-- **Pydantic**: 2.12.5
-- **Uvicorn**: 0.40.0
-- **Starlette**: 0.50.0
-- **python-dotenv**: 1.2.1
-- **qrcode / Pillow**: generación de QR para TOTP
-
-> Las versiones provienen de [Micro_Usuarios/Micro_Users/requirements.txt](Micro_Users/requirements.txt).
-
----
+## 🧰 Tecnologias Importantes
+- 🐍 `Python 3.x`
+- ⚡ `FastAPI 0.128.1`
+- 🧾 `Pydantic 2.12.5`
+- 🚀 `Uvicorn 0.40.0`
+- 🌟 `Starlette 0.50.0`
+- 🔐 `hvac 2.4.0` (Vault)
+- 🌐 `httpx 0.28.1` y `requests 2.32.5`
+- 📨 `python-multipart 0.0.22`
+- 🧠 `mediatr 1.3.2`
 
 ## 🗂️ Estructura de carpetas
-
-```
+```text
 Micro_Usuarios/
-├── Micro_Users/
-│   ├── Users_API/
-│   ├── Users_Aplication/
-│   ├── Users_Domain/
-│   ├── Users_Infraestruture/
-│   ├── .env
-│   ├── .env.example
-│   └── requirements.txt
-└── README.md
+├── README.md
+└── Micro_Users/
+    ├── .env
+    ├── .env.example
+    ├── Users_API/
+    │   ├── Controllers/
+    │   ├── main.py
+    │   ├── middleware.py
+    │   └── program.py
+    ├── Users_Application/
+    │   ├── Commands/
+    │   ├── DTOs/
+    │   ├── Handlers/
+    │   ├── Interfaces/
+    │   ├── Mappers/
+    │   └── Queries/
+    ├── Users_Domain/
+    │   ├── Entities/
+    │   ├── Enums/
+    │   └── Exceptions/
+    ├── Users_Infrastruture/
+    │   ├── Vault/
+    │   └── keycloak_adapter.py
+    ├── Users_Test/
+    └── requirements.txt
 ```
 
----
-
-## ⚙️ Configuración de entorno
-
-1) **Crear entorno virtual**
-
+## ⚙️ Configuracion de entorno
+1. Crear entorno virtual
 ```bash
 python -m venv venv
 ```
-
-2) **Activar entorno virtual**
-
-**Linux/macOS**
+2. Activar entorno virtual
+Linux/macOS:
 ```bash
 source venv/bin/activate
 ```
-
-**Windows (PowerShell)**
+Windows (PowerShell):
 ```bash
 venv\Scripts\Activate.ps1
 ```
-
-3) **Instalar dependencias**
-
+3. Instalar dependencias
 ```bash
 pip install -r requirements.txt
 ```
 
----
-
-## 🔐 Variables de entorno
-
-Copia el archivo de ejemplo y completa los valores:
-
+## 🔐 Variables de entorno (Vault)
+Copia el ejemplo y completa bootstrap:
 ```bash
 cp .env.example .env
 ```
@@ -96,59 +90,108 @@ Variables esperadas:
 - `VAULT_KV_MOUNT`
 - `VAULT_KEYCLOAK_SECRET_PATH`
 
-Este microservicio toma la configuración de Keycloak únicamente desde Hashi Vault
-(`VAULT_KEYCLOAK_SECRET_PATH`) y no requiere `KEYCLOAK_*` en `.env`.
+Secretos esperados en `VAULT_KEYCLOAK_SECRET_PATH`:
+- `KEYCLOAK_URL`
+- `KEYCLOAK_REALM`
+- `KEYCLOAK_CLIENT_ID`
+- `KEYCLOAK_CLIENT_SECRET`
 
-## 🧹 Se quitaron las credenciales de Keycloak en `.env`
-
-1. Se movieron los valores de Keycloak a Vault (`VAULT_KEYCLOAK_SECRET_PATH`).
-2. En esa ruta debes guardar (`KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`).
-3. Ahora en `Micro_Users/.env` solo van variables de bootstrap de Hashi Vault.
-4. Las variables de Keycloak se toman de Hashi Vault al iniciar el servidor.
-
-### ✅ Variables de ejemplo para Vault (Keycloak)
-
-Debes tener estas variables en la ruta (`VAULT_KEYCLOAK_SECRET_PATH`):
-- `KEYCLOAK_URL` = `https://keycloak.netcomplusve.com`
-- `KEYCLOAK_REALM` = `netcom-cctv`
-- `KEYCLOAK_CLIENT_ID` = `micro-users`
-- `KEYCLOAK_CLIENT_SECRET` = `tu_secreto_real`
-
----
-
-## ▶️ Ejecutar el servidor
-
-Desde la carpeta [Micro_Usuarios/Micro_Users](Micro_Users):
-
+## ▶️ Ejecutar servidor
+Desde `Micro_Usuarios/Micro_Users`:
 ```bash
 uvicorn Users_API.main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
-Documentación interactiva:
-- Swagger UI: http://127.0.0.1:8000/docs
-- ReDoc: http://127.0.0.1:8000/redoc
+Documentacion interactiva:
+- Swagger UI: `http://127.0.0.1:8001/docs`
+- ReDoc: `http://127.0.0.1:8001/redoc`
 
----
+## 🌐 Endpoints Reales
+| Metodo | Endpoint | Descripcion |
+|---|---|---|
+| `POST` | `/users` | Crear usuario |
+| `PUT` | `/users/{user_id}` | Actualizar usuario |
+| `GET` | `/users/{user_id}` | Consultar usuario |
+| `POST` | `/auth/login` | Login y set de cookies seguras |
+| `POST` | `/auth/refresh` | Renovar sesion por refresh token (body o cookie) |
+| `POST` | `/auth/logout` | Cerrar sesion y limpiar cookies |
+| `GET` | `/auth/validate` | Validar access token (header o cookie) |
 
-## ✅ Checklist rápido
-- [ ] Crear `.env` con las credenciales correctas
-- [ ] Activar entorno virtual
-- [ ] Instalar dependencias
-- [ ] Ejecutar Uvicorn
+Nota: actualmente no hay rutas TOTP expuestas en `Users_API/Controllers/controller.py`.
 
----
+## ✅ Checklist rapido
+- [ ] `.env` con bootstrap de Vault
+- [ ] Variables en Vault para Keycloak
+- [ ] Entorno virtual activo
+- [ ] Dependencias instaladas
+- [ ] Uvicorn en puerto correcto
 
-## 🧩 Endpoints principales (resumen)
-- `/users` (POST) crear usuario
-- `/users/{user_id}` (GET/PUT) consultar/actualizar
-- `/auth/login` (POST) login
-- `/auth/refresh` (POST) refresh token
-- `/users/{user_id}/totp/register` (POST) registrar TOTP
-- `/users/{user_id}/totp/verify` (POST) verificar TOTP
+## 🧩 Diagramas
+### 1) Secuencia - Registro de usuario (`POST /users`)
+```mermaid
+sequenceDiagram
+    actor C as Cliente
+    participant API as Users Controller
+    participant M as Mediator
+    participant H as CreateUserHandler
+    participant KC as KeycloakAdapter
+    participant K as Keycloak
 
----
+    C->>API: POST /users (form-data)
+    API->>M: send(CreateUserCommand)
+    M->>H: handle(command)
+    H->>KC: create_user(...)
+    KC->>K: Admin API create user
+    K-->>KC: user creado
+    KC-->>H: UserDTO
+    H-->>M: UserDTO
+    M-->>API: UserDTO
+    API-->>C: 200 UserResponse
+```
 
-## 📸 Imagen/diagramas
-#Poner diagrama de Arquitectura si me lo piden 
+### 2) Secuencia - Login y refresh
+```mermaid
+sequenceDiagram
+    actor C as Cliente
+    participant API as Auth Controller
+    participant M as Mediator
+    participant H1 as LoginHandler
+    participant H2 as RefreshTokenHandler
+    participant KC as KeycloakAdapter
+    participant K as Keycloak
 
-![architecture-placeholder](https://dummyimage.com/900x400/1b263b/ffffff&text=Diagrama+de+Arquitectura)
+    C->>API: POST /auth/login
+    API->>M: send(LoginCommand)
+    M->>H1: handle(command)
+    H1->>KC: login(username,password)
+    KC->>K: token endpoint
+    K-->>KC: access + refresh
+    KC-->>H1: TokenDTO
+    H1-->>API: TokenDTO
+    API-->>C: 200 + cookies access_token/refresh_token
+
+    C->>API: POST /auth/refresh
+    API->>M: send(RefreshTokenCommand)
+    M->>H2: handle(command)
+    H2->>KC: refresh_token(...)
+    KC->>K: token refresh endpoint
+    K-->>KC: nuevos tokens
+    KC-->>H2: TokenDTO
+    H2-->>API: TokenDTO
+    API-->>C: 200 + cookies renovadas
+```
+
+### 3) Secuencia - Bootstrap de app con Vault
+```mermaid
+sequenceDiagram
+    participant APP as FastAPI lifespan
+    participant V as Vault Client
+    participant KC as KeycloakAdapter
+    participant MED as Mediator
+
+    APP->>V: read_secret_with_bootstrap(path, mount)
+    V-->>APP: KEYCLOAK_URL/REALM/CLIENT_ID/CLIENT_SECRET
+    APP->>KC: build_adapter_from_env()
+    APP->>MED: register handlers (create/update/find/login/refresh)
+    APP-->>APP: app lista para recibir requests
+```

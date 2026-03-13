@@ -22,10 +22,8 @@ Arquitectura por capas:
 - ⚡ `FastAPI 0.128.1`
 - 🧾 `Pydantic 2.12.5`
 - 🚀 `Uvicorn 0.40.0`
-- 🌟 `Starlette 0.50.0`
 - 🔐 `hvac 2.4.0` (Vault)
 - 🌐 `httpx 0.28.1` y `requests 2.32.5`
-- 📨 `python-multipart 0.0.22`
 - 🧠 `mediatr 1.3.2`
 
 ## 🗂️ Estructura de carpetas
@@ -152,6 +150,7 @@ sequenceDiagram
 ### 2) Secuencia - Login y refresh
 ```mermaid
 sequenceDiagram
+    autonumber
     actor C as Cliente
     participant API as Auth Controller
     participant M as Mediator
@@ -184,6 +183,7 @@ sequenceDiagram
 ### 3) Secuencia - Bootstrap de app con Vault
 ```mermaid
 sequenceDiagram
+    autonumber
     participant APP as FastAPI lifespan
     participant V as Vault Client
     participant KC as KeycloakAdapter

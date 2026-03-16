@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from mediatr import Mediator
 
 from Users_Infrastruture.keycloak_adapter import KeycloakAdapter
+from Users_Infrastruture.runtime_network import normalize_local_url_for_container
 from Users_Infrastruture.Vault.vault_client import read_secret_with_bootstrap
 from Users_Application.Handlers.Commands.CreateUserHandler import CreateUserHandler
 from Users_Application.Handlers.Commands.UpdateUserHandler import UpdateUserHandler
@@ -55,7 +56,9 @@ def _get_keycloak_config_from_vault() -> dict[str, str] | None:
         )
 
     return {
-        "KEYCLOAK_URL": _first_present(secret, "KEYCLOAK_URL", "keycloak_url", "url", "base_url") or "",
+        "KEYCLOAK_URL": normalize_local_url_for_container(
+            _first_present(secret, "KEYCLOAK_URL", "keycloak_url", "url", "base_url") or ""
+        ),
         "KEYCLOAK_REALM": _first_present(secret, "KEYCLOAK_REALM", "keycloak_realm", "realm") or "",
         "KEYCLOAK_CLIENT_ID": _first_present(secret, "KEYCLOAK_CLIENT_ID", "keycloak_client_id", "client_id") or "",
         "KEYCLOAK_CLIENT_SECRET": _first_present(secret, "KEYCLOAK_CLIENT_SECRET", "keycloak_client_secret", "client_secret") or "",

@@ -100,6 +100,27 @@ Desde `Micro_Usuarios/Micro_Users`:
 uvicorn Users_API.main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
+## 🐳 Ejecutar con Docker
+Construir la imagen desde `Micro_Usuarios`:
+```bash
+docker build -t netcom-users-api .
+```
+
+Levantar el contenedor publicando el puerto `8001` y cargando el bootstrap de Vault:
+```bash
+docker run --rm \
+  --name netcom-users-api \
+  --env-file /home/usuario-ingenieria/Desktop/Netcom_CCTV/Micro_Usuarios/Micro_Users/.env \
+  --add-host=host.docker.internal:host-gateway \
+  -p 8001:8001 \
+  netcom-users-api
+```
+
+Notas de runtime:
+- Si `VAULT_ADDR` o `KEYCLOAK_URL` apuntan a `localhost` o `127.0.0.1`, dentro del contenedor se remapean automaticamente a `host.docker.internal`.
+- En Linux, el flag `--add-host=host.docker.internal:host-gateway` es necesario para que el contenedor pueda alcanzar servicios que corren en el host.
+- Si prefieres Docker Compose, usa la misma imagen, el mismo `env_file` y agrega `extra_hosts: ["host.docker.internal:host-gateway"]`.
+
 Documentacion interactiva:
 - Swagger UI: `http://127.0.0.1:8001/docs`
 - ReDoc: `http://127.0.0.1:8001/redoc`

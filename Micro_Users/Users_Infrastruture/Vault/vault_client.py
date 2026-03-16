@@ -4,6 +4,8 @@ from typing import Optional, Dict
 
 from dotenv import load_dotenv
 
+from Users_Infrastruture.runtime_network import normalize_local_url_for_container
+
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
@@ -20,7 +22,7 @@ class VaultClient:
         except Exception as exc:
             raise RuntimeError("hvac is required to use VaultClient") from exc
 
-        vault_addr = vault_addr or os.getenv("VAULT_ADDR", "")
+        vault_addr = normalize_local_url_for_container(vault_addr or os.getenv("VAULT_ADDR", ""))
         role_id = role_id or os.getenv("ROLE_ID") or os.getenv("VAULT_ROLE_ID")
         secret_id = secret_id or os.getenv("SECRET_ID") or os.getenv("VAULT_SECRET_ID")
         self._mount_point = (

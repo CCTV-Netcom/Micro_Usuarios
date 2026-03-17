@@ -40,7 +40,7 @@ def _first_present(secret: dict[str, str], *keys: str) -> str | None:
     return None
 
 
-def _get_keycloak_config_from_vault() -> dict[str, str] | None:
+def _get_keycloak_config_from_vault() -> dict[str, str]:
     vault_path = os.environ.get("VAULT_KEYCLOAK_SECRET_PATH") or os.environ.get("VAULT_AUTH_SECRET_PATH")
     if not vault_path:
         raise RuntimeError(

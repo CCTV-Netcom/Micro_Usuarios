@@ -145,6 +145,45 @@ Nota: actualmente no hay rutas TOTP expuestas en `Users_API/Controllers/controll
 - [ ] Dependencias instaladas
 - [ ] Uvicorn en puerto correcto
 
+## 🧪 Testing y Coverage
+### Requisitos para ejecutar pruebas
+- Python `3.x`
+- Entorno virtual activo
+- Dependencias instaladas con `pip install -r requirements.txt`
+- Ubicarse en `Micro_Usuarios/Micro_Users`
+
+### Como ejecutar los tests
+Comando base (ya incluye coverage por `pytest.ini`):
+```bash
+pytest
+```
+
+Tambien puedes ejecutar por modulo:
+```bash
+pytest Users_Test/Controller
+pytest Users_Test/Handlers
+pytest Users_Test/KeycloackServiceTest
+```
+
+### Reportes de coverage generados
+Al ejecutar `pytest`, se generan automaticamente:
+- Resumen en consola con lineas faltantes: `--cov-report=term-missing`
+- Reporte XML para CI/CD: `coverage.xml`
+- Reporte HTML navegable: `htmlcov/index.html`
+
+### Cuadro explicativo de la suite de prueba
+| Suite | Ubicacion | Que valida | Tipo de prueba |
+|---|---|---|---|
+| Controller | `Users_Test/Controller` | Endpoints, codigos HTTP, validacion de entradas y wiring con handlers/program | Integracion ligera (API) |
+| Handlers | `Users_Test/Handlers` | Casos de uso de aplicacion (comandos/queries), reglas de negocio y mapeos DTO | Unitarias de capa Application |
+| Keycloak Adapter | `Users_Test/KeycloackServiceTest` | Integracion del adaptador con llamadas a Keycloak (login, refresh, create/update user) mediante mocks | Unitarias con dependencias externas mockeadas |
+
+Cobertura objetivo del proyecto:
+- `Users_API`
+- `Users_Application`
+- `Users_Domain`
+- `Users_Infrastruture`
+
 ## 🧩 Diagramas
 ### 1) Secuencia - Registro de usuario (`POST /users`)
 ```mermaid

@@ -49,8 +49,17 @@ class VaultClient:
             result = self._client.secrets.kv.v2.read_secret_version(
                 path=path, mount_point=self._mount_point
             )
-        except Exception:
-            return None
+        except Exception as exc:
+            # Only suppress expected Vault/IO errors; propagate unexpected ones
+            try:
+                import hvac  # type: ignore[import-not-found]
+            except Exception:
+                # If hvac cannot be imported here, re-raise the original error
+                raise
+
+            if isinstance(exc, (getattr(hvac, "exceptions", object()).VaultError, OSError)):
+                return None
+            raise
 
         data = result.get("data", {}).get("data", {}) if result else {}
         return data or None
@@ -73,5 +82,20 @@ def read_secret_with_bootstrap(
     try:
         client = VaultClient(mount_point=mount_point)
         return client.read_secret(path)
-    except Exception:
-        return None
+    except Exception as exc:
+        # Only suppress expected Vault/IO/configuration errors; propagate unexpected ones
+        try:
+            import hvac  # type: ignore[import-not-found]
+        except Exception:
+            raise
+
+        if isinstance(
+            exc,
+            (
+                getattr(hvac, "exceptions", object()).VaultError,
+                OSError,
+                RuntimeError,
+            ),
+        ):
+            return None
+        raise

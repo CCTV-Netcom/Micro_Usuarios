@@ -57,11 +57,15 @@ Micro_Usuarios/
 ```
 
 ## ⚙️ Configuracion de entorno
-1. Crear entorno virtual
+1. Ir al directorio del microservicio
+```bash
+cd Micro_Users
+```
+2. Crear entorno virtual
 ```bash
 python -m venv venv
 ```
-2. Activar entorno virtual
+3. Activar entorno virtual  
 Linux/macOS:
 ```bash
 source venv/bin/activate
@@ -70,7 +74,7 @@ Windows (PowerShell):
 ```bash
 venv\Scripts\Activate.ps1
 ```
-3. Instalar dependencias
+4. Instalar dependencias
 ```bash
 pip install -r requirements.txt
 ```

@@ -1,0 +1,12 @@
+.git
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.log
+Micro_Users/.env
+Micro_Users/venv
+Micro_Users/__pycache__
+Micro_Users/.pytest_cache
+Micro_Users/**/__pycache__

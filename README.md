@@ -114,7 +114,7 @@ Levantar el contenedor publicando el puerto `8001` y cargando el bootstrap de Va
 ```bash
 docker run --rm \
   --name netcom-users-api \
-  --env-file /home/usuario-ingenieria/Desktop/Netcom_CCTV/Micro_Usuarios/Micro_Users/.env \
+  --env-file Micro_Users/.env \
   --add-host=host.docker.internal:host-gateway \
   -p 8001:8001 \
   netcom-users-api

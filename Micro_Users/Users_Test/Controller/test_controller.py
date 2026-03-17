@@ -18,7 +18,7 @@ class FakeAdapter:
 
 @pytest.fixture()
 def client(monkeypatch):
-    monkeypatch.setattr(users_program, "build_adapter_from_env", lambda: FakeAdapter())
+    monkeypatch.setattr(users_program, "build_adapter_from_vault", lambda: FakeAdapter())
     with TestClient(users_program.app) as test_client:
         yield test_client
 

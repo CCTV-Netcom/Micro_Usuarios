@@ -272,7 +272,7 @@ sequenceDiagram
 
     APP->>V: read_secret_with_bootstrap(path, mount)
     V-->>APP: KEYCLOAK_URL/REALM/CLIENT_ID/CLIENT_SECRET
-    APP->>KC: build_adapter_from_env()
+    APP->>KC: build_adapter_from_vault()
     APP->>MED: register handlers (create/update/find/login/refresh)
     APP-->>APP: app lista para recibir requests
 ```

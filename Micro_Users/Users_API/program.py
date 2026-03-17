@@ -65,8 +65,8 @@ def _get_keycloak_config_from_vault() -> dict[str, str]:
     }
 
 
-def build_adapter_from_env() -> KeycloakAdapter:
-    """Construye el adaptador de Keycloak a partir de variables de entorno requeridas."""
+def build_adapter_from_vault() -> KeycloakAdapter:
+    """Construye el adaptador de Keycloak a partir de configuracion obtenida desde Vault."""
     config = _get_keycloak_config_from_vault()
 
     url = config["KEYCLOAK_URL"]
@@ -96,7 +96,7 @@ def build_adapter_from_env() -> KeycloakAdapter:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Inicializa dependencias y registra handlers del Mediator durante el ciclo de vida de la app."""
-    adapter = build_adapter_from_env()
+    adapter = build_adapter_from_vault()
     app.state.adapter = adapter
 
     app.state.create_handler = CreateUserHandler(adapter)

@@ -17,7 +17,7 @@ def test_build_adapter_reads_keycloak_from_vault(monkeypatch):
         },
     )
 
-    adapter = users_program.build_adapter_from_env()
+    adapter = users_program.build_adapter_from_vault()
 
     assert adapter.base_url == "https://kc.vault.local"
     assert adapter.realm == "vault-realm"
@@ -30,7 +30,7 @@ def test_build_adapter_raises_when_vault_path_is_missing(monkeypatch):
     monkeypatch.delenv("VAULT_AUTH_SECRET_PATH", raising=False)
 
     with pytest.raises(RuntimeError, match="VAULT_KEYCLOAK_SECRET_PATH"):
-        users_program.build_adapter_from_env()
+        users_program.build_adapter_from_vault()
 
 
 def test_build_adapter_raises_when_vault_is_configured_but_unreachable(monkeypatch):
@@ -38,4 +38,4 @@ def test_build_adapter_raises_when_vault_is_configured_but_unreachable(monkeypat
     monkeypatch.setattr(users_program, "read_secret_with_bootstrap", lambda path, mount_point: None)
 
     with pytest.raises(RuntimeError, match="Unable to read Keycloak secret from HashiVault"):
-        users_program.build_adapter_from_env()
+        users_program.build_adapter_from_vault()

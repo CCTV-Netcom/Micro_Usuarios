@@ -174,9 +174,26 @@ Al ejecutar `pytest`, se generan automaticamente:
 ### Cuadro explicativo de la suite de prueba
 | Suite | Ubicacion | Que valida | Tipo de prueba |
 |---|---|---|---|
-| Controller | `Users_Test/Controller` | Endpoints, codigos HTTP, validacion de entradas y wiring con handlers/program | Integracion ligera (API) |
+| Controller | `Users_Test/Controller` | Endpoints, codigos HTTP, validacion de entradas y wiring con handlers/program | Unitaria de capa API (dependencias mockeadas) |
 | Handlers | `Users_Test/Handlers` | Casos de uso de aplicacion (comandos/queries), reglas de negocio y mapeos DTO | Unitarias de capa Application |
 | Keycloak Adapter | `Users_Test/KeycloackServiceTest` | Integracion del adaptador con llamadas a Keycloak (login, refresh, create/update user) mediante mocks | Unitarias con dependencias externas mockeadas |
+
+### Convencion de pruebas (AAA)
+Todas las pruebas del proyecto siguen el patron AAA:
+- Arrange: preparacion de datos, mocks y doubles (`monkeypatch`, fakes, fixtures).
+- Act: ejecucion de una sola accion del SUT (handler, endpoint o metodo del adaptador).
+- Assert: validacion de resultado, excepcion o efecto esperado.
+
+Regla aplicada en este repositorio:
+- No se consumen servicios externos reales en tests (Keycloak/Vault/red); todo se simula con mocks/fakes para mantener pruebas unitarias.
+
+### Inventario de pruebas (Nombre, Ubicacion, Descripcion)
+| Nombre | Ubicacion | Descripcion |
+|---|---|---|
+| `test_controller.py` | `Micro_Usuarios/Micro_Users/Users_Test/Controller/test_controller.py` | Pruebas unitarias de endpoints `/users` y `/auth` con `TestClient`, mediador y adaptador mockeados. |
+| `test_program_vault_config.py` | `Micro_Usuarios/Micro_Users/Users_Test/Controller/test_program_vault_config.py` | Verifica carga de configuracion de Keycloak desde Vault y errores esperados cuando falta configuracion o no hay respuesta. |
+| `test_handlers.py` | `Micro_Usuarios/Micro_Users/Users_Test/Handlers/test_handlers.py` | Valida handlers de comandos/queries: crear, actualizar, login, refresh y consulta de usuario con servicio fake. |
+| `test_keycloak_adapter.py` | `Micro_Usuarios/Micro_Users/Users_Test/KeycloackServiceTest/test_keycloak_adapter.py` | Prueba el adaptador de Keycloak aislado con `requests` mockeado: token admin, create/update/find, login/refresh, validate y asignacion de rol. |
 
 Cobertura objetivo del proyecto:
 - `Users_API`

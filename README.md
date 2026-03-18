@@ -9,6 +9,19 @@
 
 Microservicio de usuarios y autenticacion para Netcom CCTV. Gestiona ciclo de vida de usuario y sesiones contra Keycloak, con bootstrap seguro desde Hashi Vault.
 
+## Indice
+- [Arquitectura](#-arquitectura)
+- [Tecnologias Importantes](#-tecnologias-importantes)
+- [Estructura de carpetas](#-estructura-de-carpetas)
+- [Configuracion de entorno](#-configuracion-de-entorno)
+- [Variables de entorno (Vault)](#-variables-de-entorno-vault)
+- [Ejecutar servidor](#-ejecutar-servidor)
+- [Ejecutar con Docker](#-ejecutar-con-docker)
+- [Endpoints Reales](#-endpoints-reales)
+- [Checklist rapido](#-checklist-rapido)
+- [Testing y Coverage](#-testing-y-coverage)
+- [Diagramas](#-diagramas)
+
 ## 🧱 Arquitectura
 Arquitectura por capas:
 - 🌐 API: endpoints y middleware HTTP.

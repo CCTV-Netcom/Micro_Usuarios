@@ -15,7 +15,7 @@ Arquitectura por capas:
 - 🧠 Application: comandos, queries, handlers y DTOs.
 - 🧩 Domain: entidades, enums y excepciones.
 - 🔌 Infrastructure: Vault y adaptador de Keycloak.
-- 🧪 Test: pruebas por capa.
+- 🧪 Test: pruebas por capa con patron AAA (Arrange, Act, Assert).
 
 ## 🧰 Tecnologias Importantes
 - 🐍 `Python 3.x`
@@ -160,13 +160,6 @@ Nota: actualmente no hay rutas TOTP expuestas en `Users_API/Controllers/controll
 Comando base (ya incluye coverage por `pytest.ini`):
 ```bash
 pytest
-```
-
-Tambien puedes ejecutar por modulo:
-```bash
-pytest Users_Test/Controller
-pytest Users_Test/Handlers
-pytest Users_Test/KeycloackServiceTest
 ```
 
 ### Reportes de coverage generados

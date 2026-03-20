@@ -9,13 +9,26 @@
 
 Microservicio de usuarios y autenticacion para Netcom CCTV. Gestiona ciclo de vida de usuario y sesiones contra Keycloak, con bootstrap seguro desde Hashi Vault.
 
+## Indice
+- [Arquitectura](#-arquitectura)
+- [Tecnologias Importantes](#-tecnologias-importantes)
+- [Estructura de carpetas](#-estructura-de-carpetas)
+- [Configuracion de entorno](#-configuracion-de-entorno)
+- [Variables de entorno (Vault)](#-variables-de-entorno-vault)
+- [Ejecutar servidor](#-ejecutar-servidor)
+- [Ejecutar con Docker](#-ejecutar-con-docker)
+- [Endpoints Reales](#-endpoints-reales)
+- [Checklist rapido](#-checklist-rapido)
+- [Testing y Coverage](#-testing-y-coverage)
+- [Diagramas](#-diagramas)
+
 ## 🧱 Arquitectura
 Arquitectura por capas:
 - 🌐 API: endpoints y middleware HTTP.
 - 🧠 Application: comandos, queries, handlers y DTOs.
 - 🧩 Domain: entidades, enums y excepciones.
 - 🔌 Infrastructure: Vault y adaptador de Keycloak.
-- 🧪 Test: pruebas por capa.
+- 🧪 Test: pruebas por capa con patron AAA (Arrange, Act, Assert).
 
 ## 🧰 Tecnologias Importantes
 - 🐍 `Python 3.x`
@@ -160,13 +173,6 @@ Nota: actualmente no hay rutas TOTP expuestas en `Users_API/Controllers/controll
 Comando base (ya incluye coverage por `pytest.ini`):
 ```bash
 pytest
-```
-
-Tambien puedes ejecutar por modulo:
-```bash
-pytest Users_Test/Controller
-pytest Users_Test/Handlers
-pytest Users_Test/KeycloackServiceTest
 ```
 
 ### Reportes de coverage generados

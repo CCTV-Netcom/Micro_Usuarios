@@ -1,6 +1,6 @@
 import os
 
-from fastapi import APIRouter, HTTPException, Form, Request, Response, Body
+from fastapi import APIRouter, HTTPException, Form, Request, Response, Body, Depends
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, EmailStr, Field, ValidationError
 from typing import Optional, Dict, Any
@@ -72,6 +72,31 @@ def _clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(key="authToken", path="/")
 
 
+def _extract_access_token(request: Request) -> str:
+    """Obtiene bearer token desde header Authorization o cookies compatibles."""
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        return auth_header.split(" ", 1)[1].strip()
+    return request.cookies.get("access_token") or request.cookies.get("authToken") or ""
+
+
+def require_auth(request: Request):
+    """Dependency that validates access token using the app adapter.
+
+    Raises HTTPException(401) when token missing or invalid.
+    Returns adapter validation info on success.
+    """
+    token = _extract_access_token(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
+
+    adapter = request.app.state.adapter
+    info = adapter.validate_token(token)
+    if not info:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return info
+
+
 @router.post(
     "/users",
     response_model=UserResponse,
@@ -110,8 +135,8 @@ def create_user(
     return UserResponse(**user_dto.model_dump())
 
 
-@router.put("/users/{user_id}", response_model=UserResponse, summary="Actualizar usuario", description="Actualiza campos del usuario especificado.", tags=["Usuarios"])
-def update_user(user_id: str, payload: UpdateUserDTO):
+@router.put("/users/{user_id}", response_model=UserResponse, summary="Actualizar usuario", description="Actualiza campos del usuario especificado.", tags=["Usuarios"]) 
+def update_user(user_id: str, payload: UpdateUserDTO, _auth: Any = Depends(require_auth)):
     """Actualiza un usuario por su identificador."""
     cmd = UpdateUserCommand(user_id=user_id, **payload.model_dump())
     user_dto = Mediator.send(cmd)
@@ -121,7 +146,7 @@ def update_user(user_id: str, payload: UpdateUserDTO):
 
 
 @router.get("/users/{user_id}", response_model=UserResponse, summary="Obtener usuario", description="Devuelve la información del usuario por su ID.", tags=["Usuarios"])
-def find_user_by_id(user_id: str):
+def find_user_by_id(user_id: str, _auth: Any = Depends(require_auth)):
     """Busca un usuario por ID."""
     query = FindUserByIdQuery(user_id=user_id)
     user_dto = Mediator.send(query)
@@ -186,13 +211,6 @@ def logout(response: Response):
     _clear_auth_cookies(response)
     return AuthSessionResponse(detail="Logout successful")
 
-
-def _extract_access_token(request: Request) -> str:
-    """Obtiene bearer token desde header Authorization o cookies compatibles."""
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.lower().startswith("bearer "):
-        return auth_header.split(" ", 1)[1].strip()
-    return request.cookies.get("access_token") or request.cookies.get("authToken") or ""
 
 
 @router.get("/auth/validate", summary="Validar token", description="Valida el token de acceso enviado en header o cookie.", tags=["Auth"])

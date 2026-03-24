@@ -1,5 +1,4 @@
 import os
-from dotenv import load_dotenv
 from pathlib import Path
 from contextlib import asynccontextmanager
 
@@ -24,10 +23,7 @@ from .middleware import DomainExceptionMiddleware
 from .Controllers.controller import router as users_router
 
 
-# Carga variables de entorno desde Micro_Users/.env.
-env_path = Path(__file__).resolve().parent.parent / ".env"
-if env_path.exists():
-    load_dotenv(env_path)
+# NOTE: environment variables are provided externally (no .env loading here).
 #este archivo se encarga de configurar la app, usa el patron singlenton para crear una instancia de Keycloak y los handlers
 # y los registra en el Mediator para que puedan ser usados en los controladores (routers)
 
